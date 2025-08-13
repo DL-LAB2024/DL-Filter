@@ -15,7 +15,7 @@
     *{box-sizing:border-box}
     html,body{height:100%}
     body{margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:linear-gradient(180deg,#0d0f15 0%,#0b0d12 100%);color:var(--ink)}
-    .wrap{max-width:1100px;margin:32px auto;padding:0 20px}
+    .wrap{max-width:1200px;margin:32px auto;padding:0 20px}
     header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
     .logo{display:flex;align-items:center;gap:12px}
     .logo-badge{width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,var(--brand),var(--brand-2));display:grid;place-items:center;color:#0b0d12;font-weight:800;box-shadow:var(--shadow)}
@@ -27,11 +27,12 @@
     .grid{display:grid;gap:12px}
     .g-3{grid-template-columns:repeat(3,minmax(0,1fr))}
     .g-2{grid-template-columns:repeat(2,minmax(0,1fr))}
-    @media (max-width:900px){.g-3{grid-template-columns:1fr}.g-2{grid-template-columns:1fr}}
+    @media (max-width:1000px){.g-3{grid-template-columns:1fr}.g-2{grid-template-columns:1fr}}
 
     label{font-size:12px;color:var(--sub);display:block;margin-bottom:6px}
-    select,input{width:100%;border-radius:12px;border:1px solid rgba(255,255,255,.08);padding:12px 14px;background:#0e121b;color:var(--ink);outline:none}
-    select:focus,input:focus{border-color:var(--brand)}
+    select,input,textarea{width:100%;border-radius:12px;border:1px solid rgba(255,255,255,.08);padding:12px 14px;background:#0e121b;color:var(--ink);outline:none}
+    select:focus,input:focus,textarea:focus{border-color:var(--brand)}
+    textarea{min-height:84px;resize:vertical}
 
     .switcher{display:flex;gap:8px;background:#0a0d14;border:1px solid rgba(255,255,255,.08);padding:6px;border-radius:12px}
     .pill{flex:1;text-align:center;padding:10px;border-radius:10px;cursor:pointer;color:var(--sub);border:1px solid transparent;user-select:none}
@@ -47,21 +48,30 @@
     tbody td{background:#0f1420;border:1px solid rgba(255,255,255,.06);padding:14px 12px;vertical-align:top}
     tbody tr td:first-child{border-top-left-radius:10px;border-bottom-left-radius:10px}
     tbody tr td:last-child{border-top-right-radius:10px;border-bottom-right-radius:10px}
+    .muted{color:var(--sub)}
+    .divider{height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.12),transparent);margin:4px 0}
 
     /* Wider columns */
     th.th-phone, td.td-phone { min-width: 160px; }
     th.th-site,  td.td-site  { min-width: 180px; }
     th.th-links, td.td-links { min-width: 140px; }
 
-    .kpi{display:flex;gap:14px;flex-wrap:wrap;margin:16px 0}
-    .kpi .card{flex:1;min-width:220px;background:#0f1420;border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:12px}
-    .muted{color:var(--sub)}
-    .tag{display:inline-flex;align-items:center;gap:6px;padding:4px 8px;border-radius:999px;border:1px solid rgba(255,255,255,.16);font-size:12px}
-
-    .divider{height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.12),transparent);margin:4px 0}
-    .help{font-size:12px;color:var(--sub)}
     a.link{color:#a5b4fc;text-decoration:none}
     a.link:hover{text-decoration:underline}
+
+    /* Status pills */
+    .status-wrap{display:flex;gap:6px;align-items:center}
+    .status-pill{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;border:1px solid rgba(255,255,255,.16);cursor:pointer;font-size:12px;user-select:none}
+    .status-green{background:rgba(34,197,94,.12);border-color:rgba(34,197,94,.35);color:#86efac}
+    .status-yellow{background:rgba(245,158,11,.12);border-color:rgba(245,158,11,.35);color:#fcd34d}
+    .status-red{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,.35);color:#fca5a5}
+
+    .kpi{display:flex;gap:14px;flex-wrap:wrap;margin:16px 0}
+    .kpi .card{flex:1;min-width:220px;background:#0f1420;border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:12px}
+
+    /* Shortlist layout */
+    .two-col{display:grid;grid-template-columns:2fr 1fr;gap:16px}
+    @media (max-width:1000px){.two-col{grid-template-columns:1fr}}
   </style>
 </head>
 <body>
@@ -71,7 +81,7 @@
         <div class="logo-badge">D</div>
         <div>
           <div class="h1">DERAL Leads Finder</div>
-          <div class="sub">Find boutiques, influencers, and exhibits — then export a clean list.</div>
+          <div class="sub">Find boutiques, influencers, and exhibits — mark relevance, take notes, and export.</div>
         </div>
       </div>
       <div class="row">
@@ -89,7 +99,7 @@
           <div class="pill" data-mode="influencer">Influencers</div>
           <div class="pill" data-mode="exhibit">Exhibits</div>
         </div>
-        <div class="help">Tip: Filters below update based on the selection above.</div>
+        <div class="help">Tip: Filters below update based on the selection above. Mark results green/yellow/red to organize and shortlist.</div>
       </div>
     </div>
 
@@ -144,41 +154,59 @@
       </div>
     </div>
 
-    <!-- KPIs -->
+    <!-- KPIs + Two column layout: Results + Shortlist -->
     <div class="kpi">
       <div class="card"><div class="muted">Results</div><div id="kpiResults" style="font-weight:700;font-size:22px">0</div></div>
       <div class="card"><div class="muted">Mode</div><div id="kpiMode" style="font-weight:700">Boutiques</div></div>
       <div class="card"><div class="muted">Currency</div><div id="kpiCur" style="font-weight:700">USD</div></div>
     </div>
 
-    <!-- RESULTS TABLE -->
-    <div class="panel">
-      <div class="controls">
-        <div class="row" style="justify-content:space-between;align-items:center">
-          <div style="font-weight:700">Results</div>
-          <div class="help">Click a row to edit email/phone and (for influencers) deal & budget.</div>
+    <div class="two-col">
+      <!-- RESULTS TABLE -->
+      <div class="panel">
+        <div class="controls">
+          <div class="row" style="justify-content:space-between;align-items:center">
+            <div style="font-weight:700">Results</div>
+            <div class="help">Click a row to edit email/phone and (for influencers) deal & budget. Use status pills to mark relevance.</div>
+          </div>
+          <div class="divider"></div>
+          <div style="overflow:auto">
+            <table id="resultsTable">
+              <thead>
+                <tr>
+                  <th>Status</th>
+                  <th>Name</th>
+                  <th>Location</th>
+                  <th class="th-rating">Rating</th>
+                  <th class="th-reviews">Reviews</th>
+                  <th class="th-phone">Phone</th>
+                  <th class="th-email">Email</th>
+                  <th class="th-site">Website</th>
+                  <th class="th-links">Links</th>
+                  <th class="th-cats">Categories</th>
+                  <th class="th-followers" style="display:none">Followers</th>
+                  <th class="th-deal" style="display:none">Deal Type</th>
+                  <th class="th-budget" style="display:none">Budget</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
         </div>
-        <div class="divider"></div>
-        <div style="overflow:auto">
-          <table id="resultsTable">
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Location</th>
-                <th class="th-rating">Rating</th>
-                <th class="th-reviews">Reviews</th>
-                <th class="th-phone">Phone</th>
-                <th class="th-email">Email</th>
-                <th class="th-site">Website</th>
-                <th class="th-links">Links</th>
-                <th class="th-cats">Categories</th>
-                <th class="th-followers" style="display:none">Followers</th>
-                <th class="th-deal" style="display:none">Deal Type</th>
-                <th class="th-budget" style="display:none">Budget</th>
-              </tr>
-            </thead>
-            <tbody></tbody>
-          </table>
+      </div>
+
+      <!-- SHORTLIST (Relevant) -->
+      <div class="panel">
+        <div class="controls">
+          <div class="row" style="justify-content:space-between;align-items:center">
+            <div style="font-weight:700">Relevant (Shortlist)</div>
+            <div class="row">
+              <button class="btn secondary" id="btnExportShortlist">Export Shortlist CSV</button>
+              <button class="btn ghost" id="btnClearShortlist" title="Remove all shortlisted items">Clear</button>
+            </div>
+          </div>
+          <div class="divider"></div>
+          <div id="shortlistWrap"></div>
         </div>
       </div>
     </div>
@@ -204,7 +232,7 @@
       </div>
     </div>
 
-    <div class="help" style="margin-top:16px">⚠️ Google Places rarely returns emails. Use the website to find a public email, or click a row to add one manually.</div>
+    <div class="help" style="margin-top:16px">⚠️ Google Places rarely returns emails. Use the website to find a public email, or click a row to add one manually. Your shortlist & notes are saved in your browser.</div>
   </div>
 
   <script>
@@ -264,11 +292,8 @@
       ]},
     ];
 
-    // Boutique categories via Google Places types (you can expand)
     const BOUTIQUE_CATS = ['clothing_store','shoe_store','jewelry_store','shopping_mall'];
-    // Influencer categories (free text-ish)
     const INFLUENCER_CATS = ['fashion','beauty','lifestyle','motherhood','travel','fitness'];
-    // Exhibits (free text)
     const EXHIBIT_CATS = ['fashion trade show','design fair','market','pop-up'];
 
     // ------- STATE -------
@@ -276,6 +301,7 @@
       mode:'boutique',
       currency:'USD',
       results:[],
+      shortlist: JSON.parse(localStorage.getItem('deral_shortlist')||'[]'), // [{id,..., notes, status:'green'}]
       keys:{ google: localStorage.getItem('deral_google_key')||'', insta: localStorage.getItem('deral_insta_key')||'' },
     };
 
@@ -288,6 +314,7 @@
     const kpiResults = document.getElementById('kpiResults');
     const kpiMode = document.getElementById('kpiMode');
     const kpiCur = document.getElementById('kpiCur');
+    const shortlistWrap = document.getElementById('shortlistWrap');
 
     function fillCountries(){
       countrySelect.innerHTML = '<option value="">Select country</option>' + COUNTRIES.map(c=>`<option value="${c.code}">${c.name}</option>`).join('');
@@ -308,7 +335,9 @@
     function updateCurrency(){
       const isIL = countrySelect.value==='IL';
       state.currency = isIL ? 'ILS' : 'USD';
-      budgetCur1.textContent = state.currency; budgetCur2.textContent = state.currency; kpiCur.textContent = state.currency;
+      budgetCur1?.textContent && (budgetCur1.textContent = state.currency);
+      budgetCur2?.textContent && (budgetCur2.textContent = state.currency);
+      kpiCur.textContent = state.currency;
     }
 
     function setMode(mode){
@@ -324,18 +353,37 @@
       document.querySelector('.th-rating').style.display = showBoutiqueCols?'table-cell':'none';
       document.querySelector('.th-reviews').style.display = showBoutiqueCols?'table-cell':'none';
       fillCategories();
+      renderRows(); // re-render to reflect status column visibility
     }
 
     // ------- RESULTS RENDER -------
     const tbody = document.querySelector('#resultsTable tbody');
+
+    function statusWeight(s){
+      // Green (0) → top, Yellow (1) → middle, None (2), Red (3) → bottom
+      return s==='green'?0 : s==='yellow'?1 : s==='red'?3 : 2;
+    }
+
     function renderRows(){
-      tbody.innerHTML = state.results.map((r,i)=>{
+      // sort by status weight (green → yellow → none → red)
+      const sorted = [...state.results].sort((a,b)=> statusWeight(a.status||'') - statusWeight(b.status||''));
+      tbody.innerHTML = sorted.map((r,i)=>{
         const loc = [r.city,r.country].filter(Boolean).join(', ');
         const cats = (r.categories||[]).join(', ');
         const emailCell = r.email ? `<a class="link" href="mailto:${escapeHtml(r.email)}">${escapeHtml(r.email)}</a>` : '';
         const siteCell = r.website ? `<a class="link" href="${escapeHtml(r.website)}" target="_blank" rel="noopener">Website</a>` : '';
         const googleCell = r.google_url ? `<a class="link" href="${escapeHtml(r.google_url)}" target="_blank" rel="noopener">View on Google</a>` : '';
-        return `<tr data-idx="${i}">
+        const st = r.status||'';
+        const pillGreen  = `<span class="status-pill status-green" data-action="green">✓ Relevant</span>`;
+        const pillYellow = `<span class="status-pill status-yellow" data-action="yellow">• Check</span>`;
+        const pillRed    = `<span class="status-pill status-red" data-action="red">× Not</span>`;
+        const pillNone   = `<span class="muted" style="font-size:12px">—</span>`;
+        const statusPills = `<div class="status-wrap">${pillGreen}${pillYellow}${pillRed}${!st?pillNone:''}</div>`;
+
+        // store original index to map back after sorting
+        const origIdx = state.results.indexOf(r);
+        return `<tr data-idx="${origIdx}">
+          <td>${statusPills}</td>
           <td>${escapeHtml(r.name||'')}</td>
           <td>${escapeHtml(loc)}</td>
           <td class="td-rating" style="${state.mode==='influencer'?'display:none':''}">${r.rating??''}</td>
@@ -348,12 +396,41 @@
           <td class="td-followers" style="${state.mode==='influencer'?'':'display:none'}">${r.followers??''}</td>
           <td class="td-deal" style="${state.mode==='influencer'?'':'display:none'}">${escapeHtml(r.deal_type||'')}</td>
           <td class="td-budget" style="${state.mode==='influencer'?'':'display:none'}">${r.budget? formatCurrency(r.budget):''}</td>
-        </tr>`
+        </tr>`;
       }).join('');
       kpiResults.textContent = state.results.length;
       attachRowEditing();
+      attachStatusHandlers();
+      renderShortlist();
     }
 
+    function attachStatusHandlers(){
+      tbody.querySelectorAll('tr').forEach(tr=>{
+        tr.querySelectorAll('.status-pill').forEach(p=>{
+          p.addEventListener('click',(e)=>{
+            e.stopPropagation();
+            const idx = +tr.dataset.idx;
+            const action = p.dataset.action;
+            setStatus(idx, action);
+          });
+        });
+      });
+    }
+
+    function setStatus(idx, action){
+      const r = state.results[idx];
+      if(!r) return;
+      r.status = action; // 'green' | 'yellow' | 'red'
+      // If green -> add/update in shortlist
+      if(action==='green'){
+        addToShortlist(r);
+      }
+      // If red -> keep in results but it will sink to bottom via sorting
+      // Yellow -> stays in place between green and others
+      renderRows();
+    }
+
+    // Click row editing (email/phone & influencer fields)
     function attachRowEditing(){
       tbody.querySelectorAll('tr').forEach(tr=>{
         tr.addEventListener('click',()=>{
@@ -364,12 +441,14 @@
             const newDeal = prompt('Deal type (money / item+%)', r.deal_type||''); if(newDeal!==null) r.deal_type=newDeal.trim();
             const newBudget = prompt(`Budget in ${state.currency}`, r.budget||''); if(newBudget!==null && newBudget!=='') r.budget = Number(newBudget);
           }
+          // also sync shortlist if exists
+          syncShortlistContact(r);
           renderRows();
         })
       })
     }
 
-    function escapeHtml(s){ return (s||'').replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[m])) }
+    function escapeHtml(s){ return (s||'').replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;","&gt;":"&gt;","\"":"&quot;","'":"&#039;"}[m])) }
     function formatCurrency(n){ try{ return new Intl.NumberFormat(undefined,{style:'currency',currency:state.currency}).format(n) }catch{ return n } }
 
     // ------- SEARCH -------
@@ -389,6 +468,8 @@
         const dateFrom = document.getElementById('dateFrom').value; const dateTo = document.getElementById('dateTo').value;
         state.results = await searchExhibits({country,city,cat,dateFrom,dateTo});
       }
+      // reset status for new results
+      state.results.forEach(r=>{ if(!r.status) r.status=''; });
       renderRows();
     });
 
@@ -437,14 +518,136 @@
     document.getElementById('btnExport').addEventListener('click',()=>{
       if(!state.results.length){ alert('No results to export yet. Run a search first.'); return; }
       const headers = state.mode==='influencer'
-        ? ['name','country','city','followers','deal_type','budget','phone','email','website','google_url','categories']
-        : ['name','country','city','rating','user_ratings_total','phone','email','website','google_url','categories'];
-      const rows = state.results.map(r=> headers.map(h=> Array.isArray(r[h])? r[h].join('|') : (r[h]??'')));
+        ? ['status','name','country','city','followers','deal_type','budget','phone','email','website','google_url','categories']
+        : ['status','name','country','city','rating','user_ratings_total','phone','email','website','google_url','categories'];
+      const rows = state.results.map(r=> headers.map(h=> h==='status'?(r.status||'') : Array.isArray(r[h])? r[h].join('|') : (r[h]??'')));
+      downloadCSV(`deral-${state.mode}-list.csv`, headers, rows);
+    });
+
+    document.getElementById('btnExportShortlist').addEventListener('click',()=>{
+      if(!state.shortlist.length){ alert('Shortlist is empty'); return; }
+      const headers = ['name','country','city','phone','email','website','google_url','categories','notes'];
+      const rows = state.shortlist.map(r=> headers.map(h=> h==='categories' ? (r.categories||[]).join('|') : (r[h]??'')));
+      downloadCSV('deral-shortlist.csv', headers, rows);
+    });
+
+    document.getElementById('btnClearShortlist').addEventListener('click',()=>{
+      if(confirm('Clear all items from shortlist?')){
+        state.shortlist = [];
+        persistShortlist();
+        renderShortlist();
+      }
+    });
+
+    function downloadCSV(filename, headers, rows){
       const csv = [headers.join(','), ...rows.map(r=> r.map(v=>`"${String(v).replaceAll('"','""')}"`).join(','))].join('\n');
       const blob = new Blob([csv],{type:'text/csv;charset=utf-8;'});
       const url = URL.createObjectURL(blob);
-      const a = document.createElement('a'); a.href=url; a.download=`deral-${state.mode}-list.csv`; a.click(); URL.revokeObjectURL(url);
-    });
+      const a = document.createElement('a'); a.href=url; a.download=filename; a.click(); URL.revokeObjectURL(url);
+    }
+
+    // ------- SHORTLIST (Relevant) -------
+    function makeItemId(r){
+      return (r.google_url||'') || `${r.name||''}|${r.city||''}|${r.country||''}`; // prefer stable google_url
+    }
+
+    function addToShortlist(r){
+      const id = makeItemId(r);
+      const existingIdx = state.shortlist.findIndex(x=> makeItemId(x)===id);
+      const base = {
+        name:r.name||'',
+        country:r.country||'',
+        city:r.city||'',
+        phone:r.phone||'',
+        email:r.email||'',
+        website:r.website||'',
+        google_url:r.google_url||'',
+        categories:r.categories||[],
+        notes:r.notes||''
+      };
+      if(existingIdx>=0){
+        // update contact fields but keep notes
+        state.shortlist[existingIdx] = {...state.shortlist[existingIdx], ...base};
+      } else {
+        state.shortlist.push(base);
+      }
+      persistShortlist();
+    }
+
+    function syncShortlistContact(r){
+      const id = makeItemId(r);
+      const i = state.shortlist.findIndex(x=> makeItemId(x)===id);
+      if(i>=0){
+        state.shortlist[i] = {...state.shortlist[i],
+          phone:r.phone||state.shortlist[i].phone,
+          email:r.email||state.shortlist[i].email,
+          website:r.website||state.shortlist[i].website,
+          google_url:r.google_url||state.shortlist[i].google_url,
+          categories:r.categories||state.shortlist[i].categories,
+          name:r.name||state.shortlist[i].name,
+          country:r.country||state.shortlist[i].country,
+          city:r.city||state.shortlist[i].city,
+        };
+        persistShortlist();
+      }
+    }
+
+    function removeFromShortlistById(id){
+      const i = state.shortlist.findIndex(x=> makeItemId(x)===id);
+      if(i>=0){ state.shortlist.splice(i,1); persistShortlist(); renderShortlist(); }
+    }
+
+    function persistShortlist(){
+      localStorage.setItem('deral_shortlist', JSON.stringify(state.shortlist));
+    }
+
+    function renderShortlist(){
+      if(!state.shortlist.length){
+        shortlistWrap.innerHTML = '<div class="muted">No relevant items yet. Mark an item <span class="status-green status-pill" style="cursor:default">✓ Relevant</span> to add it here.</div>';
+        return;
+      }
+      shortlistWrap.innerHTML = state.shortlist.map((r,idx)=>{
+        const id = makeItemId(r);
+        const cats = (r.categories||[]).join(', ');
+        const site = r.website ? `<a class="link" href="${escapeHtml(r.website)}" target="_blank" rel="noopener">Website</a>` : '';
+        const ggl = r.google_url ? `<a class="link" href="${escapeHtml(r.google_url)}" target="_blank" rel="noopener">View on Google</a>` : '';
+        return `
+          <div class="panel" style="padding:12px;margin-bottom:10px;border-radius:12px;border:1px solid rgba(255,255,255,.08)">
+            <div class="row" style="justify-content:space-between;align-items:center;margin-bottom:8px">
+              <div style="font-weight:700">${escapeHtml(r.name||'')}</div>
+              <button class="btn ghost" data-remove="${escapeHtml(id)}">Remove</button>
+            </div>
+            <div class="muted" style="margin-bottom:6px">${escapeHtml([r.city,r.country].filter(Boolean).join(', '))}</div>
+            <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:8px">
+              <div><b>Phone:</b> ${escapeHtml(r.phone||'')}</div>
+              <div><b>Email:</b> ${r.email? `<a class="link" href="mailto:${escapeHtml(r.email)}">${escapeHtml(r.email)}</a>`:''}</div>
+              <div>${site}</div>
+              <div>${ggl}</div>
+            </div>
+            <div class="muted" style="margin-bottom:6px"><b>Categories:</b> ${escapeHtml(cats)}</div>
+            <label>Notes</label>
+            <textarea data-notes="${escapeHtml(id)}" placeholder="e.g., Contacted on Aug 14, waiting for collaboration terms...">${r.notes||''}</textarea>
+          </div>
+        `;
+      }).join('');
+
+      // attach handlers
+      shortlistWrap.querySelectorAll('button[data-remove]').forEach(btn=>{
+        btn.addEventListener('click',()=>{
+          removeFromShortlistById(btn.getAttribute('data-remove'));
+        });
+      });
+      shortlistWrap.querySelectorAll('textarea[data-notes]').forEach(ta=>{
+        ta.addEventListener('input',()=>{
+          const id = ta.getAttribute('data-notes');
+          const i = state.shortlist.findIndex(x=> makeItemId(x)===id);
+          if(i>=0){
+            state.shortlist[i].notes = ta.value;
+            persistShortlist();
+          }
+        });
+      });
+    }
 
     // ------- SETTINGS -------
     document.getElementById('btnSettings').addEventListener('click',()=>{
@@ -461,21 +664,8 @@
       document.getElementById('modal').style.display='none';
       alert('Saved locally. Remember to restrict your keys!');
     });
-async function geocodeCityCenter(countryName, cityName){
-  return new Promise((resolve)=>{
-    const geocoder = new google.maps.Geocoder();
-    geocoder.geocode({ address: [cityName, countryName].filter(Boolean).join(', ') }, (res, status)=>{
-      if(status === 'OK' && res && res[0]){
-        const loc = res[0].geometry.location;
-        resolve(loc);
-      } else {
-        resolve(null);
-      }
-    });
-  });
-}
 
-    // ------- GOOGLE PLACES (Boutiques: women-focused, filtered, pagination) -------
+    // ------- GOOGLE PLACES (Boutiques: women-focused, filtered, pagination w/ location bias) -------
     async function googlePlacesSearch({country,city,cat}){
       const key = state.keys.google; if(!key) return [];
       await loadGoogleMaps(key);
@@ -485,7 +675,6 @@ async function geocodeCityCenter(countryName, cityName){
           const queryParts = [];
           if(cat) queryParts.push(cat.replace('_',' '));
           else queryParts.push('boutique clothing women fashion designer independent');
- // women-focused default
           if(city) queryParts.push(city);
           queryParts.push(codeToName(country));
 
@@ -532,24 +721,24 @@ async function geocodeCityCenter(countryName, cityName){
             resolve(detailed);
           };
 
-         (async ()=>{
-  let request = { query };
-  if (city) {
-    const center = await geocodeCityCenter(codeToName(country), city);
-    if (center) {
-      request.location = center;
-      request.radius = 20000; // ~20km around the city
-      request.type = 'clothing_store'; // bias toward boutiques listed as clothing stores
-    }
-  }
-  service.textSearch(request, handlePage);
-})();
+          (async ()=>{
+            let request = { query };
+            if (city) {
+              const center = await geocodeCityCenter(codeToName(country), city);
+              if (center) {
+                request.location = center;
+                request.radius = 20000; // ~20km
+                request.type = 'clothing_store';
+              }
+            }
+            service.textSearch(request, handlePage);
+          })();
 
         }catch(e){ reject(e) }
       });
     }
 
-    // ------- GOOGLE PLACES (Exhibits / Markets / Pop-ups with pagination) -------
+    // Exhibits / Markets / Pop-ups
     async function googleExhibitsSearch({country,city,cat,dateFrom,dateTo}){
       const key = state.keys.google; if (!key) return [];
       await loadGoogleMaps(key);
@@ -606,16 +795,40 @@ async function geocodeCityCenter(countryName, cityName){
             resolve(detailed);
           };
 
-          service.textSearch({ query }, handlePage);
+          (async ()=>{
+            let request = { query };
+            if (city) {
+              const center = await geocodeCityCenter(codeToName(country), city);
+              if (center) {
+                request.location = center;
+                request.radius = 20000;
+              }
+            }
+            service.textSearch(request, handlePage);
+          })();
         } catch (e) {
           reject(e);
         }
       });
     }
 
+    // Geocode city center for location bias
+    async function geocodeCityCenter(countryName, cityName){
+      return new Promise((resolve)=>{
+        const geocoder = new google.maps.Geocoder();
+        geocoder.geocode({ address: [cityName, countryName].filter(Boolean).join(', ') }, (res, status)=>{
+          if(status === 'OK' && res && res[0]){
+            resolve(res[0].geometry.location);
+          } else {
+            resolve(null);
+          }
+        });
+      });
+    }
+
     function loadGoogleMaps(key){
       return new Promise((resolve,reject)=>{
-        if(window.google?.maps?.places){ resolve(); return; }
+        if(window.google?.maps?.places && window.google?.maps?.Geocoder){ resolve(); return; }
         const s = document.createElement('script');
         s.src = `https://maps.googleapis.com/maps/api/js?key=${key}&libraries=places`;
         s.async = true; s.onerror = ()=>reject(new Error('Failed to load Google Maps'));
@@ -628,7 +841,7 @@ async function geocodeCityCenter(countryName, cityName){
     document.querySelectorAll('#modeSwitcher .pill').forEach(p=> p.addEventListener('click',()=> setMode(p.dataset.mode)));
     countrySelect.addEventListener('change',()=>{ fillCities(); updateCurrency(); });
 
-    fillCountries(); fillCities(); fillCategories(); updateCurrency(); renderRows();
+    fillCountries(); fillCities(); fillCategories(); updateCurrency(); renderRows(); renderShortlist();
   </script>
 </body>
 </html>
