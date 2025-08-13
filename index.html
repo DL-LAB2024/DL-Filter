@@ -205,7 +205,23 @@
           <div class="help">Click a row to edit email/phone and (for influencers) deal & budget. Use status pills to mark relevance.</div>
           <div class="divider"></div>
           <div style="overflow:auto">
-            <table id="resultsTable">
+<div id="resultsPanel">
+  
+  <!-- Scrollable results list -->
+  <div id="resultsScrollArea">
+    <table id="resultsTable">
+      <!-- table rows go here -->
+    </table>
+  </div>
+
+  <!-- Fixed footer at the bottom of the results panel -->
+  <div id="resultsFooter">
+    <span id="loadProgress" class="muted"></span>
+    <button class="btn ghost" id="btnCancelFetch" style="display:none">Stop</button>
+    <button class="btn secondary" id="btnShowMore" style="display:none">Show next 40</button>
+  </div>
+
+</div>
               <thead>
                 <tr>
                   <th>Status</th>
