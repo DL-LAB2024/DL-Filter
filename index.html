@@ -48,7 +48,7 @@
     tbody tr td:first-child{border-top-left-radius:10px;border-bottom-left-radius:10px}
     tbody tr td:last-child{border-top-right-radius:10px;border-bottom-right-radius:10px}
 
-    /* Wider phone + site columns */
+    /* Wider columns */
     th.th-phone, td.td-phone { min-width: 160px; }
     th.th-site,  td.td-site  { min-width: 180px; }
     th.th-links, td.td-links { min-width: 140px; }
@@ -204,7 +204,7 @@
       </div>
     </div>
 
-    <div class="help" style="margin-top:16px">⚠️ Google Places rarely returns emails. Use the website to find a public email or fill it manually by clicking a row.</div>
+    <div class="help" style="margin-top:16px">⚠️ Google Places rarely returns emails. Use the website to find a public email, or click a row to add one manually.</div>
   </div>
 
   <script>
@@ -394,174 +394,14 @@
 
     document.getElementById('btnClear').addEventListener('click',()=>{ state.results=[]; renderRows(); });
 
+    // ------- BOUTIQUES (women-focused, filtered, up to 60) -------
     async function searchBoutiques({country,city,cat}){
       if(state.keys.google){
         try {
           const real = await googlePlacesSearch({country,city,cat});
           if(real?.length) return real;
         } catch(e){ console.warn(e); }
-      }// Google Places search for Exhibits / Pop-ups / Markets with pagination (up to ~60)
-async function googleExhibitsSearch({country,city,cat,dateFrom,dateTo}){
-  const key = state.keys.google; if (!key) return [];
-  await loadGoogleMaps(key);
-
-  return new Promise((resolve, reject)=>{
-    try{
-      const service = new google.maps.places.PlacesService(document.createElement('div'));
-
-      // Build an exhibit-friendly query
-      const queryParts = [];
-      if (cat) {
-        // e.g., "market", "pop-up", "fashion trade show"
-        queryParts.push(cat);
-      } else {
-        // Broad terms to find markets/pop-ups/trade shows
-        queryParts.push('fashion pop-up market trade show bazaar sample sale');
       }
-      if (city) queryParts.push(city);
-      queryParts.push(codeToName(country));
-
-      const query = queryParts.join(' ');
-      const all = [];
-
-      // Filter out big chains / irrelevant venues
-      const chainBlock = /(h&m|zara|uniqlo|gap|forever\s?21|primark|mango|bershka|pull\s?&\s?bear|stradivarius|old\s?navy|target|walmart|macys|bloomingdale|nordstrom)/i;
-
-      const handlePage = (results, status, pagination) => {
-        if (status !== google.maps.places.PlacesServiceStatus.OK || !results) {
-          finalize(); return;
-        }
-        const filtered = results.filter(r => !chainBlock.test(r.name||''));
-        all.push(...filtered);
-
-        if (pagination && pagination.hasNextPage && all.length < 60) {
-          setTimeout(()=> pagination.nextPage(), 1500); // required delay per Google docs
-        } else {
-          finalize();
-        }
-      };
-
-      const finalize = async () => {
-        const limited = all.slice(0, 60);
-        const detailed = await Promise.all(limited.map(r=> new Promise(res=>{
-          service.getDetails({
-            placeId: r.place_id,
-            fields: [
-              'name','rating','user_ratings_total','types','formatted_phone_number',
-              'website','address_components','url'
-            ]
-          }, det => {
-            const parsed = {
-              name: det?.name||r.name,
-              rating: det?.rating||r.rating,
-              user_ratings_total: det?.user_ratings_total||r.user_ratings_total,
-              phone: det?.formatted_phone_number||'',
-              email: '', // Google doesn't provide; keep editable in table
-              website: det?.website||'',
-              google_url: det?.url||'',
-              categories: det?.types||r.types||[],
-            };
-            const comps = det?.address_components||[];
-            const cityComp = comps.find(c=>c.types.includes('locality'))?.long_name
-                          || comps.find(c=>c.types.includes('postal_town'))?.long_name
-                          || '';
-            const countryComp = comps.find(c=>c.types.includes('country'))?.long_name || '';
-            parsed.city = cityComp; parsed.country = countryComp;
-            res(parsed);
-          });
-        }))).then(arr => arr.filter(Boolean)));
-
-        resolve(detailed);
-      };
-
-      service.textSearch({ query }, handlePage);
-    } catch (e) {
-      reject(e);
-    }
-  });
-}
-
-      // Google Places search for Exhibits / Pop-ups / Markets with pagination (up to ~60)
-async function googleExhibitsSearch({country,city,cat,dateFrom,dateTo}){
-  const key = state.keys.google; if(!key) return [];
-  await loadGoogleMaps(key);
-
-  return new Promise((resolve, reject)=>{
-    try{
-      const service = new google.maps.places.PlacesService(document.createElement('div'));
-
-      // Build a women/fashion exhibit-friendly query
-      // If user picked a category (e.g., "market", "pop-up"), use it; otherwise use broad terms
-      const queryParts = [];
-      if (cat) {
-        queryParts.push(cat); // e.g., "market", "pop-up", "fashion trade show"
-      } else {
-        queryParts.push('fashion pop-up market trade show bazaar sample sale'); // broad exhibit-ish terms
-      }
-      if (city) queryParts.push(city);
-      queryParts.push(codeToName(country));
-
-      const query = queryParts.join(' ');
-      const all = [];
-
-      // Filter out big chains / irrelevant venues
-      const chainBlock = /(h&m|zara|uniqlo|gap|forever\s?21|primark|mango|bershka|pull\s?&\s?bear|stradivarius|old\s?navy|target|walmart|macys|bloomingdale|nordstrom)/i;
-
-      const handlePage = (results, status, pagination) => {
-        if(status!==google.maps.places.PlacesServiceStatus.OK || !results){
-          finalize(); return;
-        }
-        // Basic filtering by name to avoid big chains
-        const filtered = results.filter(r => !chainBlock.test(r.name||''));
-        all.push(...filtered);
-
-        if (pagination && pagination.hasNextPage && all.length < 60) {
-          setTimeout(()=> pagination.nextPage(), 1500); // required delay
-        } else {
-          finalize();
-        }
-      };
-      const finalize = async () => {
-        const limited = all.slice(0, 60);
-        const detailed = await Promise.all(limited.map(r=> new Promise(res=>{
-          service.getDetails({
-            placeId: r.place_id,
-            fields: [
-              'name','rating','user_ratings_total','types','formatted_phone_number',
-              'website','address_components','url'
-            ]
-          }, det => {
-            const parsed = {
-              name: det?.name||r.name,
-              rating: det?.rating||r.rating,
-              user_ratings_total: det?.user_ratings_total||r.user_ratings_total,
-              phone: det?.formatted_phone_number||'',
-              email: '', // Google doesn't provide; keep editable
-              website: det?.website||'',
-              google_url: det?.url||'',
-              categories: det?.types||r.types||[],
-            };
-            const comps = det?.address_components||[];
-            const cityComp = comps.find(c=>c.types.includes('locality'))?.long_name
-                          || comps.find(c=>c.types.includes('postal_town'))?.long_name
-                          || '';
-            const countryComp = comps.find(c=>c.types.includes('country'))?.long_name || '';
-            parsed.city = cityComp; parsed.country = countryComp;
-
-            // Optional: de-emphasize malls/department stores for "exhibits"
-            const unwantedTypes = new Set(['department_store','supermarket']);
-            const hasUnwanted = (parsed.categories||[]).some(t => unwantedTypes.has(t));
-            if (!hasUnwanted) res(parsed); else res(null);
-          });
-        })).then(arr => arr.filter(Boolean)));
-
-        resolve(detailed);
-      };
-
-      service.textSearch({ query }, handlePage);
-    }catch(e){ reject(e); }
-  });
-}
       // fallback demo
       return [
         { name:'Lumière Boutique', country:codeToName(country), city:city||'—', rating:4.6, user_ratings_total:128, phone:'+1 555-0100', email:'info@lumiereshop.com', website:'', google_url:'', categories:[cat||'clothing_store'] },
@@ -577,35 +417,19 @@ async function googleExhibitsSearch({country,city,cat,dateFrom,dateTo}){
       return mock.filter(r=> r.followers>=minF && r.followers<=maxF && r.budget>=minB && r.budget<=maxB);
     }
 
-async function searchExhibits({country,city,cat,dateFrom,dateTo}){
-  // Use Google Places like boutiques, but with exhibit-friendly keywords
-  if (state.keys.google) {
-    try {
-      const real = await googleExhibitsSearch({ country, city, cat, dateFrom, dateTo });
-      if (real?.length) return real;
-    } catch (e) {
-      console.warn('Exhibit search failed, using mock:', e);
+    async function searchExhibits({country,city,cat,dateFrom,dateTo}){
+      if (state.keys.google) {
+        try {
+          const real = await googleExhibitsSearch({ country, city, cat, dateFrom, dateTo });
+          if (real?.length) return real;
+        } catch (e) { console.warn('Exhibit search failed, using mock:', e); }
+      }
+      // Fallback only if Google fails or no key set
+      return [
+        { name:'City Fashion Market', country:codeToName(country), city:city||'—', phone:'', email:'apply@citymarket.com', website:'', google_url:'', categories:[cat||'market'] },
+        { name:'Modern Design Pop-Up', country:codeToName(country), city:city||'—', phone:'', email:'contact@modernpopup.org', website:'', google_url:'', categories:[cat||'pop-up'] },
+      ];
     }
-  }
-  // Fallback only if Google fails or no key set
-  return [
-    { name:'City Fashion Market', country:codeToName(country), city:city||'—', phone:'', email:'apply@citymarket.com', website:'', google_url:'', categories:[cat||'market'] },
-    { name:'Modern Design Pop-Up', country:codeToName(country), city:city||'—', phone:'', email:'contact@modernpopup.org', website:'', google_url:'', categories:[cat||'pop-up'] },
-  ];
-}
-  // Use Google Places like boutiques, but with exhibit-friendly keywords
-  if(state.keys.google){
-    try {
-      const real = await googleExhibitsSearch({country,city,cat,dateFrom,dateTo});
-      if (real?.length) return real;
-    } catch(e){ console.warn('Exhibit search failed, using mock:', e); }
-  }
-  // Fallback only if Google fails or no key set
-  return [
-    { name:'City Fashion Market', country:codeToName(country), city:city||'—', phone:'', email:'apply@citymarket.com', website:'', google_url:'', categories:[cat||'market'] },
-    { name:'Modern Design Pop-Up', country:codeToName(country), city:city||'—', phone:'', email:'contact@modernpopup.org', website:'', google_url:'', categories:[cat||'pop-up'] },
-  ];
-}
 
     function codeToName(code){ return COUNTRIES.find(c=>c.code===code)?.name||code }
 
@@ -638,7 +462,7 @@ async function searchExhibits({country,city,cat,dateFrom,dateTo}){
       alert('Saved locally. Remember to restrict your keys!');
     });
 
-    // ------- GOOGLE PLACES (women-focused, filtered, 3 pages) -------
+    // ------- GOOGLE PLACES (Boutiques: women-focused, filtered, pagination) -------
     async function googlePlacesSearch({country,city,cat}){
       const key = state.keys.google; if(!key) return [];
       await loadGoogleMaps(key);
@@ -646,27 +470,20 @@ async function searchExhibits({country,city,cat,dateFrom,dateTo}){
         try{
           const service = new google.maps.places.PlacesService(document.createElement('div'));
           const queryParts = [];
-
-          // Women-focused query by default
           if(cat) queryParts.push(cat.replace('_',' '));
-          else queryParts.push('women boutique clothing');
-
+          else queryParts.push('women boutique clothing'); // women-focused default
           if(city) queryParts.push(city);
           queryParts.push(codeToName(country));
 
           const query = queryParts.join(' ');
           const all = [];
-
           const chainBlock = /(h&m|zara|uniqlo|gap|forever\s?21|primark|mango|bershka|pull\s?&\s?bear|stradivarius|old\s?navy|target|walmart|macys|bloomingdale|nordstrom)/i;
 
           const handlePage = (results, status, pagination) => {
-            if(status!==google.maps.places.PlacesServiceStatus.OK || !results){
-              finalize(); return;
-            }
+            if(status!==google.maps.places.PlacesServiceStatus.OK || !results){ finalize(); return; }
             const filtered = results.filter(r => !chainBlock.test(r.name||''));
             all.push(...filtered);
             if (pagination && pagination.hasNextPage && all.length < 60) {
-              // nextPage requires slight delay per Google docs
               setTimeout(()=> pagination.nextPage(), 1500);
             } else {
               finalize();
@@ -679,21 +496,82 @@ async function searchExhibits({country,city,cat,dateFrom,dateTo}){
               service.getDetails({
                 placeId:r.place_id,
                 fields:['name','rating','user_ratings_total','types','formatted_phone_number','website','address_components','url']
-              }, det=>{
+              },det=>{
                 const parsed = {
                   name: det?.name||r.name,
                   rating: det?.rating||r.rating,
                   user_ratings_total: det?.user_ratings_total||r.user_ratings_total,
                   phone: det?.formatted_phone_number||'',
-                  email: '', // Not provided by Google; keep editable
+                  email: '',
                   website: det?.website||'',
                   google_url: det?.url||'',
                   categories: det?.types||r.types||[],
                 };
                 const comps = det?.address_components||[];
                 const cityComp = comps.find(c=>c.types.includes('locality'))?.long_name
-                              || comps.find(c=>c.types.includes('postal_town'))?.long_name
-                              || '';
+                              || comps.find(c=>c.types.includes('postal_town'))?.long_name || '';
+                const countryComp = comps.find(c=>c.types.includes('country'))?.long_name || '';
+                parsed.city = cityComp; parsed.country = countryComp;
+                res(parsed);
+              });
+            })));
+            resolve(detailed);
+          };
+
+          service.textSearch({query}, handlePage);
+        }catch(e){ reject(e) }
+      });
+    }
+
+    // ------- GOOGLE PLACES (Exhibits / Markets / Pop-ups with pagination) -------
+    async function googleExhibitsSearch({country,city,cat,dateFrom,dateTo}){
+      const key = state.keys.google; if (!key) return [];
+      await loadGoogleMaps(key);
+
+      return new Promise((resolve, reject)=>{
+        try{
+          const service = new google.maps.places.PlacesService(document.createElement('div'));
+          const queryParts = [];
+          if (cat) queryParts.push(cat);
+          else queryParts.push('fashion pop-up market trade show bazaar sample sale');
+          if (city) queryParts.push(city);
+          queryParts.push(codeToName(country));
+
+          const query = queryParts.join(' ');
+          const all = [];
+          const chainBlock = /(h&m|zara|uniqlo|gap|forever\s?21|primark|mango|bershka|pull\s?&\s?bear|stradivarius|old\s?navy|target|walmart|macys|bloomingdale|nordstrom)/i;
+
+          const handlePage = (results, status, pagination) => {
+            if (status !== google.maps.places.PlacesServiceStatus.OK || !results) { finalize(); return; }
+            const filtered = results.filter(r => !chainBlock.test(r.name||''));
+            all.push(...filtered);
+            if (pagination && pagination.hasNextPage && all.length < 60) {
+              setTimeout(()=> pagination.nextPage(), 1500);
+            } else {
+              finalize();
+            }
+          };
+
+          const finalize = async () => {
+            const limited = all.slice(0, 60);
+            const detailed = await Promise.all(limited.map(r=> new Promise(res=>{
+              service.getDetails({
+                placeId: r.place_id,
+                fields: ['name','rating','user_ratings_total','types','formatted_phone_number','website','address_components','url']
+              }, det => {
+                const parsed = {
+                  name: det?.name||r.name,
+                  rating: det?.rating||r.rating,
+                  user_ratings_total: det?.user_ratings_total||r.user_ratings_total,
+                  phone: det?.formatted_phone_number||'',
+                  email: '',
+                  website: det?.website||'',
+                  google_url: det?.url||'',
+                  categories: det?.types||r.types||[],
+                };
+                const comps = det?.address_components||[];
+                const cityComp = comps.find(c=>c.types.includes('locality'))?.long_name
+                               || comps.find(c=>c.types.includes('postal_town'))?.long_name || '';
                 const countryComp = comps.find(c=>c.types.includes('country'))?.long_name || '';
                 parsed.city = cityComp; parsed.country = countryComp;
                 res(parsed);
@@ -703,7 +581,9 @@ async function searchExhibits({country,city,cat,dateFrom,dateTo}){
           };
 
           service.textSearch({ query }, handlePage);
-        }catch(e){ reject(e) }
+        } catch (e) {
+          reject(e);
+        }
       });
     }
 
@@ -726,4 +606,3 @@ async function searchExhibits({country,city,cat,dateFrom,dateTo}){
   </script>
 </body>
 </html>
-
