@@ -484,7 +484,8 @@ async function geocodeCityCenter(countryName, cityName){
           const service = new google.maps.places.PlacesService(document.createElement('div'));
           const queryParts = [];
           if(cat) queryParts.push(cat.replace('_',' '));
-          else queryParts.push('women boutique clothing'); // women-focused default
+          else queryParts.push('boutique clothing women fashion designer independent');
+ // women-focused default
           if(city) queryParts.push(city);
           queryParts.push(codeToName(country));
 
