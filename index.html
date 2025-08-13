@@ -7,94 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <style>
-    :root{
-      --bg:#0f1115;--panel:#151924;--muted:#202636;--ink:#e7ebf4;--sub:#a7b0c0;--brand:#8b5cf6;--brand-2:#22d3ee;--ok:#22c55e;--warn:#f59e0b;--err:#ef4444;
-      --radius:16px;--radius-sm:10px;--shadow:0 8px 30px rgba(0,0,0,.25)
-    }
-    *{box-sizing:border-box}
-    html,body{height:100%}
-    body{margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:linear-gradient(180deg,#0d0f15 0%,#0b0d12 100%);color:var(--ink)}
-    .wrap{max-width:1200px;margin:32px auto;padding:0 20px}
-    header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
-    .logo{display:flex;align-items:center;gap:12px}
-    .logo-badge{width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,var(--brand),var(--brand-2));display:grid;place-items:center;color:#0b0d12;font-weight:800;box-shadow:var(--shadow)}
-    .h1{font-weight:700;letter-spacing:.2px}
-    .sub{color:var(--sub);font-size:14px}
-
-    .panel{background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,.02));border:1px solid rgba(255,255,255,.08);border-radius:var(--radius);box-shadow:var(--shadow)}
-    .controls{display:grid;gap:12px;padding:18px}
-    .grid{display:grid;gap:12px}
-    .g-3{grid-template-columns:repeat(3,minmax(0,1fr))}
-    .g-2{grid-template-columns:repeat(2,minmax(0,1fr))}
-    @media (max-width:1000px){.g-3{grid-template-columns:1fr}.g-2{grid-template-columns:1fr}}
-
-    label{font-size:12px;color:var(--sub);display:block;margin-bottom:6px}
-    select,input,textarea{width:100%;border-radius:12px;border:1px solid rgba(255,255,255,.08);padding:12px 14px;background:#0e121b;color:var(--ink);outline:none}
-    select:focus,input:focus,textarea:focus{border-color:var(--brand)}
-    textarea{min-height:84px;resize:vertical}
-
-    .switcher{display:flex;gap:8px;background:#0a0d14;border:1px solid rgba(255,255,255,.08);padding:6px;border-radius:12px}
-    .pill{flex:1;text-align:center;padding:10px;border-radius:10px;cursor:pointer;color:var(--sub);border:1px solid transparent;user-select:none}
-    .pill.active{background:linear-gradient(180deg,#101629,#0f1422);color:var(--ink);border-color:rgba(255,255,255,.08)}
-
-    .row{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap}
-    .btn{appearance:none;border:none;background:linear-gradient(135deg,var(--brand),var(--brand-2));color:#0b0d12;font-weight:700;padding:12px 16px;border-radius:12px;cursor:pointer;box-shadow:var(--shadow)}
-    .btn.secondary{background:#0e121b;color:var(--ink);border:1px solid rgba(255,255,255,.12);font-weight:600}
-    .btn.ghost{background:transparent;color:var(--ink);border:1px dashed rgba(255,255,255,.2);font-weight:600}
-    .btn-mini{font-size:12px;padding:4px 8px;border-radius:8px;border:1px solid rgba(255,255,255,.18);background:#0e121b;color:var(--ink);cursor:pointer}
-
-    table{width:100%;border-collapse:separate;border-spacing:0 8px}
-    thead th{font-size:12px;color:var(--sub);font-weight:600;text-align:left;padding:0 12px}
-    tbody td{background:#0f1420;border:1px solid rgba(255,255,255,.06);padding:14px 12px;vertical-align:top}
-    tbody tr td:first-child{border-top-left-radius:10px;border-bottom-left-radius:10px}
-    tbody tr td:last-child{border-top-right-radius:10px;border-bottom-right-radius:10px}
-    .muted{color:var(--sub)}
-    .divider{height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.12),transparent);margin:4px 0}
-
-    /* Wider columns */
-    th.th-phone, td.td-phone { min-width: 180px; }
-    th.th-site,  td.td-site  { min-width: 180px; }
-    th.th-links, td.td-links { min-width: 200px; }
-    th.th-email, td.td-email { min-width: 240px; }
-
-    a.link{color:#a5b4fc;text-decoration:none}
-    a.link:hover{text-decoration:underline}
-
-    /* Status pills */
-    .status-wrap{display:flex;gap:6px;align-items:center}
-    .status-pill{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;border:1px solid rgba(255,255,255,.16);cursor:pointer;font-size:12px;user-select:none}
-    .status-green{background:rgba(34,197,94,.12);border-color:rgba(34,197,94,.35);color:#86efac}
-    .status-yellow{background:rgba(245,158,11,.12);border-color:rgba(245,158,11,.35);color:#fcd34d}
-    .status-red{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,.35);color:#fca5a5}
-    .status-pill.selected{ outline:2px solid rgba(255,255,255,.35); box-shadow:0 0 0 2px rgba(255,255,255,.12) inset; }
-    .status-pill[data-action="green"].selected{ outline-color: rgba(34,197,94,.6); }
-    .status-pill[data-action="yellow"].selected{ outline-color: rgba(245,158,11,.6); }
-    .status-pill[data-action="red"].selected{ outline-color: rgba(239,68,68,.6); }
-
-    .kpi{display:flex;gap:14px;flex-wrap:wrap;margin:16px 0}
-    .kpi .card{flex:1;min-width:220px;background:#0f1420;border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:12px}
-
-    /* Two columns */
-    .two-col{display:grid;grid-template-columns:2fr 1fr;gap:16px}
-    @media (max-width:1000px){.two-col{grid-template-columns:1fr}}
-
-    /* Loading overlay */
-    #loadingOverlay{
-      position:fixed; inset:0; background:rgba(0,0,0,.55);
-      display:none; align-items:center; justify-content:center; z-index:9999;
-    }
-    .loader{
-      display:flex; flex-direction:column; align-items:center; gap:12px;
-      background:rgba(21,25,36,.9); padding:24px 28px; border-radius:16px; border:1px solid rgba(255,255,255,.1);
-      box-shadow:var(--shadow);
-    }
-    .spinner{
-      width:42px; height:42px; border:4px solid rgba(255,255,255,.15); border-top-color:#a5b4fc; border-radius:50%;
-      animation:spin 1s linear infinite;
-    }
-    @keyframes spin{ to{ transform:rotate(360deg) } }
-  </style>
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <!-- Loading overlay -->
@@ -121,7 +34,7 @@
     </header>
 
     <!-- MODE SWITCHER -->
-    <div class="panel" style="margin-bottom:12px">
+    <div class="panel">
       <div class="controls">
         <label>What are you looking for?</label>
         <div class="switcher" id="modeSwitcher">
@@ -177,51 +90,35 @@
           <input type="date" id="dateTo" />
         </div>
 
-        <div class="row" style="grid-column:1/-1;justify-content:flex-end;margin-top:4px">
+        <div class="row row-right">
           <button class="btn" id="btnSearch">Search</button>
           <button class="btn ghost" id="btnClear">Clear</button>
         </div>
       </div>
     </div>
 
-    <!-- KPIs + Two column layout -->
+    <!-- KPIs -->
     <div class="kpi">
-      <div class="card"><div class="muted">Results</div><div id="kpiResults" style="font-weight:700;font-size:22px">0</div></div>
-      <div class="card"><div class="muted">Mode</div><div id="kpiMode" style="font-weight:700">Boutiques</div></div>
-      <div class="card"><div class="muted">Currency</div><div id="kpiCur" style="font-weight:700">USD</div></div>
+      <div class="card"><div class="muted">Results</div><div id="kpiResults" class="kpi-num">0</div></div>
+      <div class="card"><div class="muted">Mode</div><div id="kpiMode" class="kpi-txt">Boutiques</div></div>
+      <div class="card"><div class="muted">Currency</div><div id="kpiCur" class="kpi-txt">USD</div></div>
     </div>
 
     <div class="two-col">
-      <!-- RESULTS -->
+      <!-- RESULTS PANEL (scroll inside, sticky footer) -->
       <div class="panel">
-        <div class="controls">
-          <div class="row" style="justify-content:space-between;align-items:center">
-            <div style="font-weight:700">Results</div>
-            <div class="row">
-              <span id="loadProgress" class="muted" style="min-width:160px"></span>
-              <button class="btn ghost" id="btnCancelFetch" style="display:none">Stop</button>
-            </div>
+        <div class="controls results-panel" id="resultsPanel">
+
+          <!-- Header -->
+          <div class="row space-between">
+            <div class="strong">Results</div>
+            <div class="help">Click a row to edit email/phone and (for influencers) deal & budget. Use status pills to mark relevance.</div>
           </div>
-          <div class="help">Click a row to edit email/phone and (for influencers) deal & budget. Use status pills to mark relevance.</div>
           <div class="divider"></div>
-          <div style="overflow:auto">
-<div id="resultsPanel">
-  
-  <!-- Scrollable results list -->
-  <div id="resultsScrollArea">
-    <table id="resultsTable">
-      <!-- table rows go here -->
-    </table>
-  </div>
 
-  <!-- Fixed footer at the bottom of the results panel -->
-  <div id="resultsFooter">
-    <span id="loadProgress" class="muted"></span>
-    <button class="btn ghost" id="btnCancelFetch" style="display:none">Stop</button>
-    <button class="btn secondary" id="btnShowMore" style="display:none">Show next 40</button>
-  </div>
-
-</div>
+          <!-- Scrollable area -->
+          <div class="results-scroll" id="resultsScrollArea">
+            <table id="resultsTable">
               <thead>
                 <tr>
                   <th>Status</th>
@@ -242,63 +139,41 @@
               <tbody></tbody>
             </table>
           </div>
-          <div class="row" style="justify-content:center;margin-top:10px">
+
+          <!-- Sticky footer -->
+          <div class="results-footer" id="resultsFooter">
+            <span id="loadProgress" class="muted minw"></span>
+            <button class="btn ghost" id="btnCancelFetch" style="display:none">Stop</button>
             <button class="btn secondary" id="btnShowMore" style="display:none">Show next 40</button>
           </div>
+
         </div>
       </div>
 
       <!-- SHORTLIST -->
-     <div class="panel">
-  <div class="controls results-panel" id="resultsPanel">
-
-    <!-- Header (static) -->
-    <div class="row" style="justify-content:space-between;align-items:center">
-      <div style="font-weight:700">Results</div>
-      <div class="help">Click a row to edit email/phone and (for influencers) deal & budget. Use status pills to mark relevance.</div>
+      <div class="panel">
+        <div class="controls">
+          <div class="row space-between">
+            <div class="strong">Relevant (Shortlist)</div>
+            <div class="row">
+              <button class="btn secondary" id="btnExportShortlist">Export Shortlist CSV</button>
+              <button class="btn ghost" id="btnClearShortlist" title="Remove all shortlisted items">Clear</button>
+            </div>
+          </div>
+          <div class="divider"></div>
+          <div id="shortlistWrap"></div>
+        </div>
+      </div>
     </div>
-    <div class="divider"></div>
-
-    <!-- Scrollable area -->
-    <div class="results-scroll" id="resultsScrollArea">
-      <table id="resultsTable">
-        <thead>
-          <tr>
-            <th>Status</th>
-            <th>Name</th>
-            <th>Location</th>
-            <th class="th-rating">Rating</th>
-            <th class="th-reviews">Reviews</th>
-            <th class="th-phone">Phone</th>
-            <th class="th-email">Email</th>
-            <th class="th-site">Website</th>
-            <th class="th-links">Links</th>
-            <th class="th-cats">Categories</th>
-            <th class="th-followers" style="display:none">Followers</th>
-            <th class="th-deal" style="display:none">Deal Type</th>
-            <th class="th-budget" style="display:none">Budget</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
-    </div>
-
-    <!-- Sticky footer (always visible at bottom of panel) -->
-    <div class="results-footer" id="resultsFooter">
-      <span id="loadProgress" class="muted" style="min-width:160px"></span>
-      <button class="btn ghost" id="btnCancelFetch" style="display:none">Stop</button>
-      <button class="btn secondary" id="btnShowMore" style="display:none">Show next 40</button>
-    </div>
-
-  </div>
-</div>
-
 
     <!-- SETTINGS MODAL -->
-    <div id="modal" style="position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;padding:20px">
-      <div class="panel" style="max-width:720px;width:100%">
+    <div id="modal">
+      <div class="panel modal-card">
         <div class="controls grid g-2">
-          <div style="grid-column:1/-1"><div style="font-weight:700">Settings & API Keys</div><div class="help">Keys are saved in your browser only. For production, keep secrets on a server/proxy.</div></div>
+          <div class="wide">
+            <div class="strong">Settings & API Keys</div>
+            <div class="help">Keys are saved in your browser only. For production, keep secrets on a server/proxy.</div>
+          </div>
           <div>
             <label>Google Maps JavaScript API Key <span class="muted">(Places)</span></label>
             <input id="googleKey" placeholder="AIza..." />
@@ -307,7 +182,7 @@
             <label>Instagram / RapidAPI Key <span class="muted">(optional, for influencer lookup)</span></label>
             <input id="instaKey" placeholder="xxxx-xxxx-xxxx" />
           </div>
-          <div class="row" style="grid-column:1/-1;justify-content:flex-end">
+          <div class="row row-right">
             <button class="btn secondary" id="btnCloseModal">Close</button>
             <button class="btn" id="btnSaveKeys">Save</button>
           </div>
@@ -315,7 +190,7 @@
       </div>
     </div>
 
-    <div class="help" style="margin-top:16px">⚠️ Google Places rarely returns emails. Use “Website” or “Google Search / Find email” to locate a public address, then click a row to paste it. Shortlist & notes are saved in your browser.</div>
+    <div class="help footnote">⚠️ Google Places rarely returns emails. Use “Website” or “Google Search / Find email” to locate a public address, then click a row to paste it. Shortlist & notes are saved in your browser.</div>
   </div>
 
   <script>
@@ -331,7 +206,7 @@
     const TEXTSEARCH_PAGE_LIMIT = 60;     // per query cap from Google
     const DETAILS_CHUNK = 10;             // inflate 10 at a time for smooth UI
 
-    // ------------- SIMPLE DATASETS ----------
+    // --------- DATASETS ----------
     const COUNTRIES = [
       { code:'IL', name:'Israel', currency:'ILS', cities:[
         'Tel Aviv','Jerusalem','Haifa','Rishon LeZion','Petah Tikva','Netanya','Ashdod','Ashkelon',
@@ -379,7 +254,7 @@
     const INFLUENCER_CATS = ['fashion','beauty','lifestyle','motherhood','travel','fitness'];
     const EXHIBIT_CATS = ['fashion trade show','design fair','market','pop-up'];
 
-    // ----------------- STATE -----------------
+    // -------------- STATE --------------
     const state = {
       mode:'boutique',
       currency:'USD',
@@ -408,9 +283,9 @@
     const btnShowMore = document.getElementById('btnShowMore');
     const btnCancelFetch = document.getElementById('btnCancelFetch');
 
+    // ---------- UI helpers ----------
     function showLoading(on){ loadingOverlay.style.display = on ? 'flex' : 'none'; }
     function updatePaginationUI(){ btnShowMore.style.display = (state.allResults.length > state.visibleCount) ? 'inline-block' : 'none'; }
-
     function fillCountries(){
       countrySelect.innerHTML = '<option value="">Select country</option>' + COUNTRIES.map(c=>`<option value="${c.code}">${c.name}</option>`).join('');
     }
@@ -447,7 +322,7 @@
       renderRows();
     }
 
-    // --------------- RENDERING ---------------
+    // -------- RENDERING --------
     function statusWeight(s){ return s==='green'?0 : s==='yellow'?1 : s==='red'?3 : 2; }
 
     function renderRows(){
@@ -455,8 +330,9 @@
       tbody.innerHTML = sorted.map((r)=>{
         const loc = [r.city,r.country].filter(Boolean).join(', ');
         const cats = (r.categories||[]).join(', ');
+
         const emailCell = r.email
-          ? `<div style="display:flex;gap:6px;align-items:center;">
+          ? `<div class="email-cell">
                <a class="link" href="mailto:${escapeHtml(r.email)}">${escapeHtml(r.email)}</a>
                <button class="btn-mini" data-copy="${escapeHtml(r.email)}">Copy</button>
              </div>`
@@ -568,7 +444,7 @@
     function escapeHtml(s){ return (s||'').replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;","&gt;":"&gt;","\"":"&quot;","'":"&#039;"}[m])) }
     function formatCurrency(n){ try{ return new Intl.NumberFormat(undefined,{style:'currency',currency:state.currency}).format(n) }catch{ return n } }
 
-    // ---------------- SEARCH -----------------
+    // --------- SEARCH ---------
     document.getElementById('btnSearch').addEventListener('click', async ()=>{
       const country = countrySelect.value; const city = citySelect.value; const cat = categorySelect.value;
       if(!country){ alert('Please select a country'); return; }
@@ -605,20 +481,20 @@
 
     document.getElementById('btnClear').addEventListener('click',()=>{ state.results=[]; renderRows(); });
 
-    btnShowMore.addEventListener('click', ()=>{
+    document.getElementById('btnShowMore').addEventListener('click', ()=>{
       state.visibleCount += state.pageSize;
       state.results = state.allResults.slice(0, state.visibleCount);
       renderRows();
       updatePaginationUI();
     });
 
-    btnCancelFetch.addEventListener('click', ()=>{
+    document.getElementById('btnCancelFetch').addEventListener('click', ()=>{
       state.cancel = true;
-      btnCancelFetch.style.display = 'none';
+      document.getElementById('btnCancelFetch').style.display = 'none';
       elProgress.textContent = 'Stopping…';
     });
 
-    // ------- MULTI-VARIANT BOUTIQUE SEARCH (streamed) -------
+    // --- Multi-variant streamed boutique search (>60) ---
     async function searchBoutiquesMulti({country,city,cat}){
       if(!state.keys.google){
         return [
@@ -628,14 +504,13 @@
       }
       await loadGoogleMaps(state.keys.google);
 
-      // build variant list (limit for safety)
       const base = (cat ? cat.replace('_',' ') : VARIANTS[0]);
       const variants = [base, ...VARIANTS.slice(1)].slice(0, MAX_VARIANTS_PER_SEARCH);
 
       // init streaming state
       state.loading = true;
       state.cancel = false;
-      btnCancelFetch.style.display = 'inline-block';
+      document.getElementById('btnCancelFetch').style.display = 'inline-block';
       elProgress.textContent = 'Starting…';
 
       const seen = new Set();
@@ -681,14 +556,14 @@
       }
 
       state.loading = false;
-      btnCancelFetch.style.display = 'none';
+      document.getElementById('btnCancelFetch').style.display = 'none';
       if(state.cancel){ elProgress.textContent = `Stopped at ${state.allResults.length} results.`; }
       else { elProgress.textContent = `Done: ${state.allResults.length} results.`; }
 
       return state.results;
     }
 
-    // low-level TextSearch with pagination (up to ~60 per query)
+    // TextSearch with pagination (up to ~60 per query)
     async function googlePlacesTextSearch({country,city,query,typeBias}){
       return new Promise((resolve,reject)=>{
         try{
@@ -725,7 +600,7 @@
       });
     }
 
-    // inflate details for a TextSearch result
+    // Inflate details
     async function inflatePlaceDetails(ts){
       return new Promise((res)=>{
         const service = new google.maps.places.PlacesService(document.createElement('div'));
@@ -750,7 +625,6 @@
           const countryComp = comps.find(c=>c.types.includes('country'))?.long_name || '';
           parsed.city = cityComp; parsed.country = countryComp;
 
-          // Helpful Google Search link
           const qSearch = encodeURIComponent(`${parsed.name} ${parsed.city||''} ${parsed.country||''} boutique`);
           parsed.google_search = `https://www.google.com/search?q=${qSearch}`;
 
@@ -784,7 +658,7 @@
 
     function codeToName(code){ return COUNTRIES.find(c=>c.code===code)?.name||code }
 
-    // ---------------- EXPORT -----------------
+    // --------- EXPORTS ---------
     document.getElementById('btnExport').addEventListener('click',()=>{
       if(!state.results.length){ alert('No results to export yet. Run a search first.'); return; }
       const headers = state.mode==='influencer'
@@ -816,7 +690,7 @@
       const a = document.createElement('a'); a.href=url; a.download=filename; a.click(); URL.revokeObjectURL(url);
     }
 
-    // ---------------- SHORTLIST --------------
+    // ---------- SHORTLIST ----------
     function makeItemId(r){ return (r.google_url||'') || `${r.name||''}|${r.city||''}|${r.country||''}`; }
 
     function addToShortlist(r){
@@ -879,35 +753,36 @@
         const ggl = r.google_url ? `<a class="link" href="${escapeHtml(r.google_url)}" target="_blank" rel="noopener">View on Google</a>` : '';
         const gsr = r.google_search ? `<a class="link" href="${escapeHtml(r.google_search)}" target="_blank" rel="noopener">Google Search</a>` : '';
         const emailPart = r.email
-          ? `<div style="display:flex;gap:6px;align-items:center;"><a class="link" href="mailto:${escapeHtml(r.email)}">${escapeHtml(r.email)}</a><button class="btn-mini" data-copy="${escapeHtml(r.email)}">Copy</button></div>`
+          ? `<div class="email-cell"><a class="link" href="mailto:${escapeHtml(r.email)}">${escapeHtml(r.email)}</a><button class="btn-mini" data-copy="${escapeHtml(r.email)}">Copy</button></div>`
           : (r.website ? buildFindEmailLinks(r) : '');
 
         return `
-          <div class="panel" style="padding:12px;margin-bottom:10px;border-radius:12px;border:1px solid rgba(255,255,255,.08)">
-            <div class="row" style="justify-content:space-between;align-items:center;margin-bottom:6px">
-              <div style="font-weight:700">${escapeHtml(r.name||'')}</div>
+          <div class="panel shortlist-card">
+            <div class="row space-between mb6">
+              <div class="strong">${escapeHtml(r.name||'')}</div>
               <button class="btn ghost" data-remove="${escapeHtml(id)}">Remove</button>
             </div>
-            <div class="status-wrap" data-status-wrap="${escapeHtml(id)}" style="margin:6px 0">
+            <div class="status-wrap" data-status-wrap="${escapeHtml(id)}">
               <span class="status-pill status-green ${r.status==='green'?'selected':''}" data-sl-status="${escapeHtml(id)}" data-action="green" title="Working">✓ Working</span>
               <span class="status-pill status-yellow ${r.status==='yellow'?'selected':''}" data-sl-status="${escapeHtml(id)}" data-action="yellow" title="In communication">• In comms</span>
               <span class="status-pill status-red ${r.status==='red'?'selected':''}" data-sl-status="${escapeHtml(id)}" data-action="red" title="Didn’t go through">× Didn’t go</span>
             </div>
-            <div class="muted" style="margin-bottom:6px">${escapeHtml([r.city,r.country].filter(Boolean).join(', '))}</div>
-            <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:8px">
+            <div class="muted mb6">${escapeHtml([r.city,r.country].filter(Boolean).join(', '))}</div>
+            <div class="line-wrap">
               <div><b>Phone:</b> ${escapeHtml(r.phone||'')}</div>
               <div><b>Email:</b> ${emailPart}</div>
               <div>${site}</div>
               <div>${ggl}</div>
               <div>${gsr}</div>
             </div>
-            <div class="muted" style="margin-bottom:6px"><b>Categories:</b> ${escapeHtml(cats)}</div>
+            <div class="muted mb6"><b>Categories:</b> ${escapeHtml(cats)}</div>
             <label>Notes</label>
             <textarea data-notes="${escapeHtml(id)}" placeholder="e.g., Contacted on Aug 14, waiting for collaboration terms...">${r.notes||''}</textarea>
           </div>
         `;
       }).join('');
 
+      // handlers
       shortlistWrap.querySelectorAll('button[data-remove]').forEach(btn=>{
         btn.addEventListener('click',()=> removeFromShortlistById(btn.getAttribute('data-remove')));
       });
@@ -940,7 +815,7 @@
       });
     }
 
-    // ---------------- SETTINGS ----------------
+    // ---------- SETTINGS ----------
     document.getElementById('btnSettings').addEventListener('click',()=>{
       document.getElementById('googleKey').value = state.keys.google;
       document.getElementById('instaKey').value = state.keys.insta;
@@ -956,7 +831,7 @@
       alert('Saved locally. Remember to restrict your keys!');
     });
 
-    // ------------- GOOGLE HELPERS -------------
+    // ---------- GOOGLE HELPERS ----------
     async function geocodeCityCenter(countryName, cityName){
       return new Promise((resolve)=>{
         const geocoder = new google.maps.Geocoder();
@@ -978,7 +853,7 @@
       })
     }
 
-    // --------------- LIFECYCLE ----------------
+    // ---------- LIFECYCLE ----------
     document.querySelectorAll('#modeSwitcher .pill').forEach(p=> p.addEventListener('click',()=> setMode(p.dataset.mode)));
     countrySelect.addEventListener('change',()=>{ fillCities(); updateCurrency(); });
 
