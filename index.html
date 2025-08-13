@@ -249,20 +249,50 @@
       </div>
 
       <!-- SHORTLIST -->
-      <div class="panel">
-        <div class="controls">
-          <div class="row" style="justify-content:space-between;align-items:center">
-            <div style="font-weight:700">Relevant (Shortlist)</div>
-            <div class="row">
-              <button class="btn secondary" id="btnExportShortlist">Export Shortlist CSV</button>
-              <button class="btn ghost" id="btnClearShortlist" title="Remove all shortlisted items">Clear</button>
-            </div>
-          </div>
-          <div class="divider"></div>
-          <div id="shortlistWrap"></div>
-        </div>
-      </div>
+     <div class="panel">
+  <div class="controls results-panel" id="resultsPanel">
+
+    <!-- Header (static) -->
+    <div class="row" style="justify-content:space-between;align-items:center">
+      <div style="font-weight:700">Results</div>
+      <div class="help">Click a row to edit email/phone and (for influencers) deal & budget. Use status pills to mark relevance.</div>
     </div>
+    <div class="divider"></div>
+
+    <!-- Scrollable area -->
+    <div class="results-scroll" id="resultsScrollArea">
+      <table id="resultsTable">
+        <thead>
+          <tr>
+            <th>Status</th>
+            <th>Name</th>
+            <th>Location</th>
+            <th class="th-rating">Rating</th>
+            <th class="th-reviews">Reviews</th>
+            <th class="th-phone">Phone</th>
+            <th class="th-email">Email</th>
+            <th class="th-site">Website</th>
+            <th class="th-links">Links</th>
+            <th class="th-cats">Categories</th>
+            <th class="th-followers" style="display:none">Followers</th>
+            <th class="th-deal" style="display:none">Deal Type</th>
+            <th class="th-budget" style="display:none">Budget</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <!-- Sticky footer (always visible at bottom of panel) -->
+    <div class="results-footer" id="resultsFooter">
+      <span id="loadProgress" class="muted" style="min-width:160px"></span>
+      <button class="btn ghost" id="btnCancelFetch" style="display:none">Stop</button>
+      <button class="btn secondary" id="btnShowMore" style="display:none">Show next 40</button>
+    </div>
+
+  </div>
+</div>
+
 
     <!-- SETTINGS MODAL -->
     <div id="modal" style="position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;padding:20px">
