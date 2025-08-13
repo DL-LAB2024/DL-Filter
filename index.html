@@ -531,7 +531,19 @@ async function geocodeCityCenter(countryName, cityName){
             resolve(detailed);
           };
 
-          service.textSearch({query}, handlePage);
+         (async ()=>{
+  let request = { query };
+  if (city) {
+    const center = await geocodeCityCenter(codeToName(country), city);
+    if (center) {
+      request.location = center;
+      request.radius = 20000; // ~20km around the city
+      request.type = 'clothing_store'; // bias toward boutiques listed as clothing stores
+    }
+  }
+  service.textSearch(request, handlePage);
+})();
+
         }catch(e){ reject(e) }
       });
     }
