@@ -400,7 +400,87 @@
           const real = await googlePlacesSearch({country,city,cat});
           if(real?.length) return real;
         } catch(e){ console.warn(e); }
+      }// Google Places search for Exhibits / Pop-ups / Markets with pagination (up to ~60)
+async function googleExhibitsSearch({country,city,cat,dateFrom,dateTo}){
+  const key = state.keys.google; if (!key) return [];
+  await loadGoogleMaps(key);
+
+  return new Promise((resolve, reject)=>{
+    try{
+      const service = new google.maps.places.PlacesService(document.createElement('div'));
+
+      // Build an exhibit-friendly query
+      const queryParts = [];
+      if (cat) {
+        // e.g., "market", "pop-up", "fashion trade show"
+        queryParts.push(cat);
+      } else {
+        // Broad terms to find markets/pop-ups/trade shows
+        queryParts.push('fashion pop-up market trade show bazaar sample sale');
       }
+      if (city) queryParts.push(city);
+      queryParts.push(codeToName(country));
+
+      const query = queryParts.join(' ');
+      const all = [];
+
+      // Filter out big chains / irrelevant venues
+      const chainBlock = /(h&m|zara|uniqlo|gap|forever\s?21|primark|mango|bershka|pull\s?&\s?bear|stradivarius|old\s?navy|target|walmart|macys|bloomingdale|nordstrom)/i;
+
+      const handlePage = (results, status, pagination) => {
+        if (status !== google.maps.places.PlacesServiceStatus.OK || !results) {
+          finalize(); return;
+        }
+        const filtered = results.filter(r => !chainBlock.test(r.name||''));
+        all.push(...filtered);
+
+        if (pagination && pagination.hasNextPage && all.length < 60) {
+          setTimeout(()=> pagination.nextPage(), 1500); // required delay per Google docs
+        } else {
+          finalize();
+        }
+      };
+
+      const finalize = async () => {
+        const limited = all.slice(0, 60);
+        const detailed = await Promise.all(limited.map(r=> new Promise(res=>{
+          service.getDetails({
+            placeId: r.place_id,
+            fields: [
+              'name','rating','user_ratings_total','types','formatted_phone_number',
+              'website','address_components','url'
+            ]
+          }, det => {
+            const parsed = {
+              name: det?.name||r.name,
+              rating: det?.rating||r.rating,
+              user_ratings_total: det?.user_ratings_total||r.user_ratings_total,
+              phone: det?.formatted_phone_number||'',
+              email: '', // Google doesn't provide; keep editable in table
+              website: det?.website||'',
+              google_url: det?.url||'',
+              categories: det?.types||r.types||[],
+            };
+            const comps = det?.address_components||[];
+            const cityComp = comps.find(c=>c.types.includes('locality'))?.long_name
+                          || comps.find(c=>c.types.includes('postal_town'))?.long_name
+                          || '';
+            const countryComp = comps.find(c=>c.types.includes('country'))?.long_name || '';
+            parsed.city = cityComp; parsed.country = countryComp;
+            res(parsed);
+          });
+        }))).then(arr => arr.filter(Boolean)));
+
+        resolve(detailed);
+      };
+
+      service.textSearch({ query }, handlePage);
+    } catch (e) {
+      reject(e);
+    }
+  });
+}
+
       // Google Places search for Exhibits / Pop-ups / Markets with pagination (up to ~60)
 async function googleExhibitsSearch({country,city,cat,dateFrom,dateTo}){
   const key = state.keys.google; if(!key) return [];
