@@ -65,6 +65,14 @@
     .status-green{background:rgba(34,197,94,.12);border-color:rgba(34,197,94,.35);color:#86efac}
     .status-yellow{background:rgba(245,158,11,.12);border-color:rgba(245,158,11,.35);color:#fcd34d}
     .status-red{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,.35);color:#fca5a5}
+    /* Selected state */
+    .status-pill.selected{
+      outline:2px solid rgba(255,255,255,.35);
+      box-shadow:0 0 0 2px rgba(255,255,255,.12) inset;
+    }
+    .status-pill[data-action="green"].selected{ outline-color: rgba(34,197,94,.6); }
+    .status-pill[data-action="yellow"].selected{ outline-color: rgba(245,158,11,.6); }
+    .status-pill[data-action="red"].selected{ outline-color: rgba(239,68,68,.6); }
 
     .kpi{display:flex;gap:14px;flex-wrap:wrap;margin:16px 0}
     .kpi .card{flex:1;min-width:220px;background:#0f1420;border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:12px}
@@ -167,8 +175,11 @@
         <div class="controls">
           <div class="row" style="justify-content:space-between;align-items:center">
             <div style="font-weight:700">Results</div>
-            <div class="help">Click a row to edit email/phone and (for influencers) deal & budget. Use status pills to mark relevance.</div>
+            <div class="row">
+              <button class="btn ghost" id="btnLoadMore" title="Fetch more results">Load more</button>
+            </div>
           </div>
+          <div class="help">Click a row to edit email/phone and (for influencers) deal & budget. Use status pills to mark relevance.</div>
           <div class="divider"></div>
           <div style="overflow:auto">
             <table id="resultsTable">
@@ -238,55 +249,43 @@
   <script>
     // ------- SIMPLE DATASETS -------
     const COUNTRIES = [
-      // Israel (expanded)
       { code:'IL', name:'Israel', currency:'ILS', cities:[
         'Tel Aviv','Jerusalem','Haifa','Rishon LeZion','Petah Tikva','Netanya','Ashdod','Ashkelon',
         'Beersheba','Herzliya','Ramat Gan','Givatayim','Holon','Bat Yam','Rehovot','Kfar Saba',
         'Ra\'anana','Rosh HaAyin','Hadera','Nahariya','Eilat','Modi\'in-Maccabim-Re\'ut','Yokneam','Kiryat Ata'
       ]},
-      // United States (expanded)
       { code:'US', name:'United States', currency:'USD', cities:[
         'New York','Los Angeles','Miami','Chicago','Dallas','San Francisco','Boston','Seattle','Atlanta','Austin',
         'Denver','Houston','Philadelphia','Washington','San Diego','Las Vegas','Phoenix','Orlando','Tampa','Portland',
         'Nashville','Charlotte','San Jose','Minneapolis','Detroit','New Orleans'
       ]},
-      // UK
       { code:'GB', name:'United Kingdom', currency:'USD', cities:[
         'London','Manchester','Birmingham','Leeds','Liverpool','Bristol','Glasgow','Edinburgh','Brighton','Newcastle'
       ]},
-      // France
       { code:'FR', name:'France', currency:'USD', cities:[
         'Paris','Lyon','Marseille','Nice','Bordeaux','Toulouse','Lille','Nantes','Montpellier','Cannes'
       ]},
-      // Germany
       { code:'DE', name:'Germany', currency:'USD', cities:[
         'Berlin','Munich','Hamburg','Frankfurt','Cologne','Düsseldorf','Stuttgart','Leipzig','Dresden','Nuremberg'
       ]},
-      // Italy
       { code:'IT', name:'Italy', currency:'USD', cities:[
         'Milan','Rome','Florence','Naples','Venice','Turin','Bologna','Verona','Genoa','Palermo'
       ]},
-      // Spain
       { code:'ES', name:'Spain', currency:'USD', cities:[
         'Madrid','Barcelona','Valencia','Seville','Malaga','Bilbao','Zaragoza','Palma de Mallorca'
       ]},
-      // Netherlands
       { code:'NL', name:'Netherlands', currency:'USD', cities:[
         'Amsterdam','Rotterdam','The Hague','Utrecht','Eindhoven','Haarlem'
       ]},
-      // Greece
       { code:'GR', name:'Greece', currency:'USD', cities:[
         'Athens','Thessaloniki','Patras','Heraklion','Chania'
       ]},
-      // Portugal
       { code:'PT', name:'Portugal', currency:'USD', cities:[
         'Lisbon','Porto','Braga','Coimbra','Faro'
       ]},
-      // Switzerland
       { code:'CH', name:'Switzerland', currency:'USD', cities:[
         'Zurich','Geneva','Basel','Lausanne','Bern','Lugano'
       ]},
-      // Austria
       { code:'AT', name:'Austria', currency:'USD', cities:[
         'Vienna','Salzburg','Innsbruck','Graz','Linz'
       ]},
@@ -301,8 +300,9 @@
       mode:'boutique',
       currency:'USD',
       results:[],
-      shortlist: JSON.parse(localStorage.getItem('deral_shortlist')||'[]'), // [{id,..., notes, status:'green'}]
+      shortlist: JSON.parse(localStorage.getItem('deral_shortlist')||'[]'),
       keys:{ google: localStorage.getItem('deral_google_key')||'', insta: localStorage.getItem('deral_insta_key')||'' },
+      lastSearch: null, // {mode,country,city,cat,usedQueries:Set}
     };
 
     // ------- INIT UI -------
@@ -335,8 +335,8 @@
     function updateCurrency(){
       const isIL = countrySelect.value==='IL';
       state.currency = isIL ? 'ILS' : 'USD';
-      budgetCur1?.textContent && (budgetCur1.textContent = state.currency);
-      budgetCur2?.textContent && (budgetCur2.textContent = state.currency);
+      if (budgetCur1) budgetCur1.textContent = state.currency;
+      if (budgetCur2) budgetCur2.textContent = state.currency;
       kpiCur.textContent = state.currency;
     }
 
@@ -353,34 +353,29 @@
       document.querySelector('.th-rating').style.display = showBoutiqueCols?'table-cell':'none';
       document.querySelector('.th-reviews').style.display = showBoutiqueCols?'table-cell':'none';
       fillCategories();
-      renderRows(); // re-render to reflect status column visibility
+      renderRows();
     }
 
     // ------- RESULTS RENDER -------
     const tbody = document.querySelector('#resultsTable tbody');
 
     function statusWeight(s){
-      // Green (0) → top, Yellow (1) → middle, None (2), Red (3) → bottom
       return s==='green'?0 : s==='yellow'?1 : s==='red'?3 : 2;
     }
 
     function renderRows(){
-      // sort by status weight (green → yellow → none → red)
       const sorted = [...state.results].sort((a,b)=> statusWeight(a.status||'') - statusWeight(b.status||''));
-      tbody.innerHTML = sorted.map((r,i)=>{
+      tbody.innerHTML = sorted.map((r)=>{
         const loc = [r.city,r.country].filter(Boolean).join(', ');
         const cats = (r.categories||[]).join(', ');
         const emailCell = r.email ? `<a class="link" href="mailto:${escapeHtml(r.email)}">${escapeHtml(r.email)}</a>` : '';
         const siteCell = r.website ? `<a class="link" href="${escapeHtml(r.website)}" target="_blank" rel="noopener">Website</a>` : '';
         const googleCell = r.google_url ? `<a class="link" href="${escapeHtml(r.google_url)}" target="_blank" rel="noopener">View on Google</a>` : '';
         const st = r.status||'';
-        const pillGreen  = `<span class="status-pill status-green" data-action="green">✓ Relevant</span>`;
-        const pillYellow = `<span class="status-pill status-yellow" data-action="yellow">• Check</span>`;
-        const pillRed    = `<span class="status-pill status-red" data-action="red">× Not</span>`;
-        const pillNone   = `<span class="muted" style="font-size:12px">—</span>`;
-        const statusPills = `<div class="status-wrap">${pillGreen}${pillYellow}${pillRed}${!st?pillNone:''}</div>`;
-
-        // store original index to map back after sorting
+        const pillGreen  = `<span class="status-pill status-green ${st==='green'?'selected':''}" data-action="green" title="Relevant">✓ Relevant</span>`;
+        const pillYellow = `<span class="status-pill status-yellow ${st==='yellow'?'selected':''}" data-action="yellow" title="Need to check">• Check</span>`;
+        const pillRed    = `<span class="status-pill status-red ${st==='red'?'selected':''}" data-action="red" title="Not relevant">× Not</span>`;
+        const statusPills = `<div class="status-wrap">${pillGreen}${pillYellow}${pillRed}</div>`;
         const origIdx = state.results.indexOf(r);
         return `<tr data-idx="${origIdx}">
           <td>${statusPills}</td>
@@ -421,16 +416,14 @@
       const r = state.results[idx];
       if(!r) return;
       r.status = action; // 'green' | 'yellow' | 'red'
-      // If green -> add/update in shortlist
-      if(action==='green'){
-        addToShortlist(r);
+      if(action==='green'){ addToShortlist(r); } // add/update in shortlist
+      if(action!=='green'){
+        // keep shortlist status only if item already there; sync contact regardless
+        syncShortlistContact(r);
       }
-      // If red -> keep in results but it will sink to bottom via sorting
-      // Yellow -> stays in place between green and others
       renderRows();
     }
 
-    // Click row editing (email/phone & influencer fields)
     function attachRowEditing(){
       tbody.querySelectorAll('tr').forEach(tr=>{
         tr.addEventListener('click',()=>{
@@ -441,7 +434,6 @@
             const newDeal = prompt('Deal type (money / item+%)', r.deal_type||''); if(newDeal!==null) r.deal_type=newDeal.trim();
             const newBudget = prompt(`Budget in ${state.currency}`, r.budget||''); if(newBudget!==null && newBudget!=='') r.budget = Number(newBudget);
           }
-          // also sync shortlist if exists
           syncShortlistContact(r);
           renderRows();
         })
@@ -470,12 +462,53 @@
       }
       // reset status for new results
       state.results.forEach(r=>{ if(!r.status) r.status=''; });
+      // remember context for "Load more"
+      state.lastSearch = { mode: state.mode, country, city, cat, usedQueries: new Set(['base']) };
       renderRows();
     });
 
     document.getElementById('btnClear').addEventListener('click',()=>{ state.results=[]; renderRows(); });
 
-    // ------- BOUTIQUES (women-focused, filtered, up to 60) -------
+    // ------- LOAD MORE (beyond 60 via extra keyword variants) -------
+    const EXTRA_KEYWORD_SETS = [
+      ['women boutique','independent boutique','designer boutique'],
+      ['women clothing store','womenswear boutique','women fashion'],
+      ['local fashion boutique','artisan boutique','evening dresses boutique'],
+    ];
+
+    document.getElementById('btnLoadMore').addEventListener('click', async ()=>{
+      const ctx = state.lastSearch;
+      if(!ctx || ctx.mode!=='boutique'){ alert('Load more works in Boutiques mode after a search.'); return; }
+      if(!state.keys.google){ alert('Add your Google key first.'); return; }
+
+      // pick next unused keyword
+      let picked = null;
+      outer: for(const set of EXTRA_KEYWORD_SETS){
+        for(const kw of set){
+          if(!ctx.usedQueries.has(kw)){ picked = kw; break outer; }
+        }
+      }
+      if(!picked){ alert('No more keyword variants.'); return; }
+      ctx.usedQueries.add(picked);
+
+      const query = [picked, ctx.city, codeToName(ctx.country)].filter(Boolean).join(' ');
+      try{
+        const more = await googlePlacesSearchWithQuery({country:ctx.country, city:ctx.city, query});
+        const seen = new Set(state.results.map(r=> (r.google_url||`${r.name}|${r.city}|${r.country}`)));
+        const fresh = more.filter(r=> {
+          const id = (r.google_url||`${r.name}|${r.city}|${r.country}`);
+          if(seen.has(id)) return false;
+          seen.add(id); return true;
+        });
+        state.results.push(...fresh);
+        renderRows();
+      }catch(e){
+        console.warn('Load more failed', e);
+        alert('Could not load more right now.');
+      }
+    });
+
+    // ------- MOCK/REAL SEARCHES -------
     async function searchBoutiques({country,city,cat}){
       if(state.keys.google){
         try {
@@ -483,7 +516,6 @@
           if(real?.length) return real;
         } catch(e){ console.warn(e); }
       }
-      // fallback demo
       return [
         { name:'Lumière Boutique', country:codeToName(country), city:city||'—', rating:4.6, user_ratings_total:128, phone:'+1 555-0100', email:'info@lumiereshop.com', website:'', google_url:'', categories:[cat||'clothing_store'] },
         { name:'Atelier Rue', country:codeToName(country), city:city||'—', rating:4.4, user_ratings_total:86, phone:'+1 555-0101', email:'hello@atelierrue.com', website:'', google_url:'', categories:[cat||'clothing_store'] },
@@ -505,7 +537,6 @@
           if (real?.length) return real;
         } catch (e) { console.warn('Exhibit search failed, using mock:', e); }
       }
-      // Fallback only if Google fails or no key set
       return [
         { name:'City Fashion Market', country:codeToName(country), city:city||'—', phone:'', email:'apply@citymarket.com', website:'', google_url:'', categories:[cat||'market'] },
         { name:'Modern Design Pop-Up', country:codeToName(country), city:city||'—', phone:'', email:'contact@modernpopup.org', website:'', google_url:'', categories:[cat||'pop-up'] },
@@ -526,7 +557,7 @@
 
     document.getElementById('btnExportShortlist').addEventListener('click',()=>{
       if(!state.shortlist.length){ alert('Shortlist is empty'); return; }
-      const headers = ['name','country','city','phone','email','website','google_url','categories','notes'];
+      const headers = ['status','name','country','city','phone','email','website','google_url','categories','notes'];
       const rows = state.shortlist.map(r=> headers.map(h=> h==='categories' ? (r.categories||[]).join('|') : (r[h]??'')));
       downloadCSV('deral-shortlist.csv', headers, rows);
     });
@@ -548,7 +579,7 @@
 
     // ------- SHORTLIST (Relevant) -------
     function makeItemId(r){
-      return (r.google_url||'') || `${r.name||''}|${r.city||''}|${r.country||''}`; // prefer stable google_url
+      return (r.google_url||'') || `${r.name||''}|${r.city||''}|${r.country||''}`;
     }
 
     function addToShortlist(r){
@@ -563,10 +594,10 @@
         website:r.website||'',
         google_url:r.google_url||'',
         categories:r.categories||[],
-        notes:r.notes||''
+        notes:r.notes||'',
+        status:(r.status==='green'?'green':(r.status==='yellow'?'yellow':'green')) // default green
       };
       if(existingIdx>=0){
-        // update contact fields but keep notes
         state.shortlist[existingIdx] = {...state.shortlist[existingIdx], ...base};
       } else {
         state.shortlist.push(base);
@@ -587,6 +618,7 @@
           name:r.name||state.shortlist[i].name,
           country:r.country||state.shortlist[i].country,
           city:r.city||state.shortlist[i].city,
+          status:r.status || state.shortlist[i].status
         };
         persistShortlist();
       }
@@ -606,16 +638,21 @@
         shortlistWrap.innerHTML = '<div class="muted">No relevant items yet. Mark an item <span class="status-green status-pill" style="cursor:default">✓ Relevant</span> to add it here.</div>';
         return;
       }
-      shortlistWrap.innerHTML = state.shortlist.map((r,idx)=>{
+      shortlistWrap.innerHTML = state.shortlist.map((r)=>{
         const id = makeItemId(r);
         const cats = (r.categories||[]).join(', ');
         const site = r.website ? `<a class="link" href="${escapeHtml(r.website)}" target="_blank" rel="noopener">Website</a>` : '';
         const ggl = r.google_url ? `<a class="link" href="${escapeHtml(r.google_url)}" target="_blank" rel="noopener">View on Google</a>` : '';
         return `
           <div class="panel" style="padding:12px;margin-bottom:10px;border-radius:12px;border:1px solid rgba(255,255,255,.08)">
-            <div class="row" style="justify-content:space-between;align-items:center;margin-bottom:8px">
+            <div class="row" style="justify-content:space-between;align-items:center;margin-bottom:6px">
               <div style="font-weight:700">${escapeHtml(r.name||'')}</div>
               <button class="btn ghost" data-remove="${escapeHtml(id)}">Remove</button>
+            </div>
+            <div class="status-wrap" data-status-wrap="${escapeHtml(id)}" style="margin:6px 0">
+              <span class="status-pill status-green ${r.status==='green'?'selected':''}" data-sl-status="${escapeHtml(id)}" data-action="green" title="Working">✓ Working</span>
+              <span class="status-pill status-yellow ${r.status==='yellow'?'selected':''}" data-sl-status="${escapeHtml(id)}" data-action="yellow" title="In communication">• In comms</span>
+              <span class="status-pill status-red ${r.status==='red'?'selected':''}" data-sl-status="${escapeHtml(id)}" data-action="red" title="Didn’t go through">× Didn’t go</span>
             </div>
             <div class="muted" style="margin-bottom:6px">${escapeHtml([r.city,r.country].filter(Boolean).join(', '))}</div>
             <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:8px">
@@ -631,19 +668,26 @@
         `;
       }).join('');
 
-      // attach handlers
       shortlistWrap.querySelectorAll('button[data-remove]').forEach(btn=>{
-        btn.addEventListener('click',()=>{
-          removeFromShortlistById(btn.getAttribute('data-remove'));
-        });
+        btn.addEventListener('click',()=> removeFromShortlistById(btn.getAttribute('data-remove')));
       });
       shortlistWrap.querySelectorAll('textarea[data-notes]').forEach(ta=>{
         ta.addEventListener('input',()=>{
           const id = ta.getAttribute('data-notes');
           const i = state.shortlist.findIndex(x=> makeItemId(x)===id);
+          if(i>=0){ state.shortlist[i].notes = ta.value; persistShortlist(); }
+        });
+      });
+      // shortlist status handlers
+      shortlistWrap.querySelectorAll('[data-sl-status]').forEach(p=>{
+        p.addEventListener('click',()=>{
+          const id = p.getAttribute('data-sl-status');
+          const action = p.getAttribute('data-action');
+          const i = state.shortlist.findIndex(x=> makeItemId(x)===id);
           if(i>=0){
-            state.shortlist[i].notes = ta.value;
+            state.shortlist[i].status = action;
             persistShortlist();
+            renderShortlist();
           }
         });
       });
@@ -665,7 +709,7 @@
       alert('Saved locally. Remember to restrict your keys!');
     });
 
-    // ------- GOOGLE PLACES (Boutiques: women-focused, filtered, pagination w/ location bias) -------
+    // ------- GOOGLE PLACES (Boutiques) -------
     async function googlePlacesSearch({country,city,cat}){
       const key = state.keys.google; if(!key) return [];
       await loadGoogleMaps(key);
@@ -727,7 +771,7 @@
               const center = await geocodeCityCenter(codeToName(country), city);
               if (center) {
                 request.location = center;
-                request.radius = 20000; // ~20km
+                request.radius = 20000;
                 request.type = 'clothing_store';
               }
             }
@@ -738,11 +782,74 @@
       });
     }
 
+    // extra variant search for "Load more"
+    async function googlePlacesSearchWithQuery({country,city,query}){
+      await loadGoogleMaps(state.keys.google);
+      return new Promise((resolve,reject)=>{
+        try{
+          const service = new google.maps.places.PlacesService(document.createElement('div'));
+          const all = [];
+          const chainBlock = /(h&m|zara|uniqlo|gap|forever\s?21|primark|mango|bershka|pull\s?&\s?bear|stradivarius|old\s?navy|target|walmart|macys|bloomingdale|nordstrom)/i;
+
+          const handlePage = (results, status, pagination) => {
+            if(status!==google.maps.places.PlacesServiceStatus.OK || !results){ finalize(); return; }
+            const filtered = results.filter(r => !chainBlock.test(r.name||''));
+            all.push(...filtered);
+            if (pagination && pagination.hasNextPage && all.length < 60) {
+              setTimeout(()=> pagination.nextPage(), 1500);
+            } else {
+              finalize();
+            }
+          };
+
+          const finalize = async () => {
+            const limited = all.slice(0, 60);
+            const detailed = await Promise.all(limited.map(r=> new Promise(res=>{
+              service.getDetails({
+                placeId:r.place_id,
+                fields:['name','rating','user_ratings_total','types','formatted_phone_number','website','address_components','url']
+              },det=>{
+                const parsed = {
+                  name: det?.name||r.name,
+                  rating: det?.rating||r.rating,
+                  user_ratings_total: det?.user_ratings_total||r.user_ratings_total,
+                  phone: det?.formatted_phone_number||'',
+                  email: '',
+                  website: det?.website||'',
+                  google_url: det?.url||'',
+                  categories: det?.types||r.types||[],
+                };
+                const comps = det?.address_components||[];
+                const cityComp = comps.find(c=>c.types.includes('locality'))?.long_name
+                              || comps.find(c=>c.types.includes('postal_town'))?.long_name || '';
+                const countryComp = comps.find(c=>c.types.includes('country'))?.long_name || '';
+                parsed.city = cityComp; parsed.country = countryComp;
+                res(parsed);
+              });
+            })));
+            resolve(detailed);
+          };
+
+          (async ()=>{
+            let request = { query };
+            if (city) {
+              const center = await geocodeCityCenter(codeToName(country), city);
+              if (center) {
+                request.location = center;
+                request.radius = 20000;
+                request.type = 'clothing_store';
+              }
+            }
+            service.textSearch(request, handlePage);
+          })();
+        }catch(e){ reject(e) }
+      });
+    }
+
     // Exhibits / Markets / Pop-ups
-    async function googleExhibitsSearch({country,city,cat,dateFrom,dateTo}){
+    async function googleExhibitsSearch({country,city,cat}){
       const key = state.keys.google; if (!key) return [];
       await loadGoogleMaps(key);
-
       return new Promise((resolve, reject)=>{
         try{
           const service = new google.maps.places.PlacesService(document.createElement('div'));
