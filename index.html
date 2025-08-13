@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DERAL Finder</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <h1>DERAL Finder</h1>
+
+  <section>
+    <h2>Boutique Filter</h2>
+    <label>Country: <input type="text" id="country"></label>
+    <label>City: <input type="text" id="city"></label>
+    <label>Category: <input type="text" id="category"></label>
+    <button onclick="searchBoutiques()">Search Boutiques</button>
+    <div id="boutiqueResults"></div>
+  </section>
+
+  <section>
+    <h2>Influencer Filter</h2>
+    <label>Min Followers: <input type="number" id="minFollowers"></label>
+    <label>Max Followers: <input type="number" id="maxFollowers"></label>
+    <label>Budget (₪/$): <input type="number" id="budget"></label>
+    <button onclick="searchInfluencers()">Search Influencers</button>
+    <div id="influencerResults"></div>
+  </section>
+
+  <script src="script.js"></script>
+</body>
+</html>
