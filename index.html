@@ -497,7 +497,22 @@ async function googleExhibitsSearch({country,city,cat,dateFrom,dateTo}){
       return mock.filter(r=> r.followers>=minF && r.followers<=maxF && r.budget>=minB && r.budget<=maxB);
     }
 
-  async function searchExhibits({country,city,cat,dateFrom,dateTo}){
+async function searchExhibits({country,city,cat,dateFrom,dateTo}){
+  // Use Google Places like boutiques, but with exhibit-friendly keywords
+  if (state.keys.google) {
+    try {
+      const real = await googleExhibitsSearch({ country, city, cat, dateFrom, dateTo });
+      if (real?.length) return real;
+    } catch (e) {
+      console.warn('Exhibit search failed, using mock:', e);
+    }
+  }
+  // Fallback only if Google fails or no key set
+  return [
+    { name:'City Fashion Market', country:codeToName(country), city:city||'—', phone:'', email:'apply@citymarket.com', website:'', google_url:'', categories:[cat||'market'] },
+    { name:'Modern Design Pop-Up', country:codeToName(country), city:city||'—', phone:'', email:'contact@modernpopup.org', website:'', google_url:'', categories:[cat||'pop-up'] },
+  ];
+}
   // Use Google Places like boutiques, but with exhibit-friendly keywords
   if(state.keys.google){
     try {
