@@ -39,3 +39,32 @@ button {
   justify-content: center;
   gap: 12px;
 }
+/* Results panel with internal scroll + sticky footer */
+.results-panel{
+  display:flex;
+  flex-direction:column;
+  /* Adjust the 320px offset so the panel fits your layout
+     (header + mode + filters + KPIs etc.) */
+  height: calc(100vh - 320px);
+  min-height: 420px;        /* safety */
+}
+
+.results-scroll{
+  flex: 1 1 auto;
+  overflow-y: auto;
+  padding-bottom: 64px;     /* so last row isn’t hidden under footer */
+}
+
+.results-footer{
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+  display:flex;
+  gap:12px;
+  justify-content:center;
+  align-items:center;
+  background: linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,.02));
+  border-top: 1px solid rgba(255,255,255,.12);
+  padding: 10px 12px;
+}
+
