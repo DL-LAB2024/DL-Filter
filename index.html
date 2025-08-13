@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>DL Finder</title>
+  <title>DERAL Leads Finder</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -44,9 +44,14 @@
 
     table{width:100%;border-collapse:separate;border-spacing:0 8px}
     thead th{font-size:12px;color:var(--sub);font-weight:600;text-align:left;padding:0 12px}
-    tbody td{background:#0f1420;border:1px solid rgba(255,255,255,.06);padding:14px 12px}
+    tbody td{background:#0f1420;border:1px solid rgba(255,255,255,.06);padding:14px 12px;vertical-align:top}
     tbody tr td:first-child{border-top-left-radius:10px;border-bottom-left-radius:10px}
     tbody tr td:last-child{border-top-right-radius:10px;border-bottom-right-radius:10px}
+
+    /* Wider phone + site columns */
+    th.th-phone, td.td-phone { min-width: 160px; }
+    th.th-site,  td.td-site  { min-width: 180px; }
+    th.th-links, td.td-links { min-width: 140px; }
 
     .kpi{display:flex;gap:14px;flex-wrap:wrap;margin:16px 0}
     .kpi .card{flex:1;min-width:220px;background:#0f1420;border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:12px}
@@ -54,8 +59,9 @@
     .tag{display:inline-flex;align-items:center;gap:6px;padding:4px 8px;border-radius:999px;border:1px solid rgba(255,255,255,.16);font-size:12px}
 
     .divider{height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.12),transparent);margin:4px 0}
-
     .help{font-size:12px;color:var(--sub)}
+    a.link{color:#a5b4fc;text-decoration:none}
+    a.link:hover{text-decoration:underline}
   </style>
 </head>
 <body>
@@ -64,7 +70,7 @@
       <div class="logo">
         <div class="logo-badge">D</div>
         <div>
-          <div class="h1">DL Leads Finder</div>
+          <div class="h1">DERAL Leads Finder</div>
           <div class="sub">Find boutiques, influencers, and exhibits — then export a clean list.</div>
         </div>
       </div>
@@ -83,7 +89,7 @@
           <div class="pill" data-mode="influencer">Influencers</div>
           <div class="pill" data-mode="exhibit">Exhibits</div>
         </div>
-        <div class="help">Tip: The filters below update based on the selection above.</div>
+        <div class="help">Tip: Filters below update based on the selection above.</div>
       </div>
     </div>
 
@@ -150,7 +156,7 @@
       <div class="controls">
         <div class="row" style="justify-content:space-between;align-items:center">
           <div style="font-weight:700">Results</div>
-          <div class="help">Click a row to edit custom fields (e.g., outreach terms, contact status).</div>
+          <div class="help">Click a row to edit email/phone and (for influencers) deal & budget.</div>
         </div>
         <div class="divider"></div>
         <div style="overflow:auto">
@@ -163,6 +169,8 @@
                 <th class="th-reviews">Reviews</th>
                 <th class="th-phone">Phone</th>
                 <th class="th-email">Email</th>
+                <th class="th-site">Website</th>
+                <th class="th-links">Links</th>
                 <th class="th-cats">Categories</th>
                 <th class="th-followers" style="display:none">Followers</th>
                 <th class="th-deal" style="display:none">Deal Type</th>
@@ -196,25 +204,71 @@
       </div>
     </div>
 
-    <div class="help" style="margin-top:16px">⚠️ Email addresses are rarely provided by the Google Places API. To enrich missing emails, open the website and copy the public contact or use a trusted enrichment service.
-    </div>
+    <div class="help" style="margin-top:16px">⚠️ Google Places rarely returns emails. Use the website to find a public email or fill it manually by clicking a row.</div>
   </div>
 
   <script>
     // ------- SIMPLE DATASETS -------
     const COUNTRIES = [
-      { code:'IL', name:'Israel', currency:'ILS', cities:['Tel Aviv','Jerusalem','Haifa','Rishon LeZion','Petah Tikva'] },
-      { code:'US', name:'United States', currency:'USD', cities:['New York','Los Angeles','Miami','Chicago','Dallas','San Francisco'] },
-      { code:'GB', name:'United Kingdom', currency:'USD', cities:['London','Manchester','Birmingham','Leeds','Liverpool'] },
-      { code:'FR', name:'France', currency:'USD', cities:['Paris','Lyon','Marseille','Nice','Bordeaux'] },
-      { code:'DE', name:'Germany', currency:'USD', cities:['Berlin','Munich','Hamburg','Frankfurt','Cologne'] },
-      { code:'IT', name:'Italy', currency:'USD', cities:['Milan','Rome','Florence','Naples','Venice'] },
+      // Israel (expanded)
+      { code:'IL', name:'Israel', currency:'ILS', cities:[
+        'Tel Aviv','Jerusalem','Haifa','Rishon LeZion','Petah Tikva','Netanya','Ashdod','Ashkelon',
+        'Beersheba','Herzliya','Ramat Gan','Givatayim','Holon','Bat Yam','Rehovot','Kfar Saba',
+        'Ra\'anana','Rosh HaAyin','Hadera','Nahariya','Eilat','Modi\'in-Maccabim-Re\'ut','Yokneam','Kiryat Ata'
+      ]},
+      // United States (expanded)
+      { code:'US', name:'United States', currency:'USD', cities:[
+        'New York','Los Angeles','Miami','Chicago','Dallas','San Francisco','Boston','Seattle','Atlanta','Austin',
+        'Denver','Houston','Philadelphia','Washington','San Diego','Las Vegas','Phoenix','Orlando','Tampa','Portland',
+        'Nashville','Charlotte','San Jose','Minneapolis','Detroit','New Orleans'
+      ]},
+      // UK
+      { code:'GB', name:'United Kingdom', currency:'USD', cities:[
+        'London','Manchester','Birmingham','Leeds','Liverpool','Bristol','Glasgow','Edinburgh','Brighton','Newcastle'
+      ]},
+      // France
+      { code:'FR', name:'France', currency:'USD', cities:[
+        'Paris','Lyon','Marseille','Nice','Bordeaux','Toulouse','Lille','Nantes','Montpellier','Cannes'
+      ]},
+      // Germany
+      { code:'DE', name:'Germany', currency:'USD', cities:[
+        'Berlin','Munich','Hamburg','Frankfurt','Cologne','Düsseldorf','Stuttgart','Leipzig','Dresden','Nuremberg'
+      ]},
+      // Italy
+      { code:'IT', name:'Italy', currency:'USD', cities:[
+        'Milan','Rome','Florence','Naples','Venice','Turin','Bologna','Verona','Genoa','Palermo'
+      ]},
+      // Spain
+      { code:'ES', name:'Spain', currency:'USD', cities:[
+        'Madrid','Barcelona','Valencia','Seville','Malaga','Bilbao','Zaragoza','Palma de Mallorca'
+      ]},
+      // Netherlands
+      { code:'NL', name:'Netherlands', currency:'USD', cities:[
+        'Amsterdam','Rotterdam','The Hague','Utrecht','Eindhoven','Haarlem'
+      ]},
+      // Greece
+      { code:'GR', name:'Greece', currency:'USD', cities:[
+        'Athens','Thessaloniki','Patras','Heraklion','Chania'
+      ]},
+      // Portugal
+      { code:'PT', name:'Portugal', currency:'USD', cities:[
+        'Lisbon','Porto','Braga','Coimbra','Faro'
+      ]},
+      // Switzerland
+      { code:'CH', name:'Switzerland', currency:'USD', cities:[
+        'Zurich','Geneva','Basel','Lausanne','Bern','Lugano'
+      ]},
+      // Austria
+      { code:'AT', name:'Austria', currency:'USD', cities:[
+        'Vienna','Salzburg','Innsbruck','Graz','Linz'
+      ]},
     ];
-    // Boutique categories via Google Places types (simplified, you can expand)
+
+    // Boutique categories via Google Places types (you can expand)
     const BOUTIQUE_CATS = ['clothing_store','shoe_store','jewelry_store','shopping_mall'];
-    // Influencer categories (free text-ish for now)
+    // Influencer categories (free text-ish)
     const INFLUENCER_CATS = ['fashion','beauty','lifestyle','motherhood','travel','fitness'];
-    // Exhibit categories (trade fairs etc.)
+    // Exhibits (free text)
     const EXHIBIT_CATS = ['fashion trade show','design fair','market','pop-up'];
 
     // ------- STATE -------
@@ -260,10 +314,8 @@
     function setMode(mode){
       state.mode = mode; kpiMode.textContent = mode.charAt(0).toUpperCase()+mode.slice(1);
       document.querySelectorAll('.pill').forEach(p=>p.classList.toggle('active', p.dataset.mode===mode));
-      // Toggle sections
       document.querySelectorAll('.influencer-only').forEach(el=> el.style.display = (mode==='influencer')? 'block':'none');
       document.querySelectorAll('.exhibit-only').forEach(el=> el.style.display = (mode==='exhibit')? 'block':'none');
-      // Show/hide columns
       const showInfluencerCols = mode==='influencer';
       document.querySelector('.th-followers').style.display = showInfluencerCols?'table-cell':'none';
       document.querySelector('.th-deal').style.display = showInfluencerCols?'table-cell':'none';
@@ -271,8 +323,6 @@
       const showBoutiqueCols = mode!=='influencer';
       document.querySelector('.th-rating').style.display = showBoutiqueCols?'table-cell':'none';
       document.querySelector('.th-reviews').style.display = showBoutiqueCols?'table-cell':'none';
-      // Category label
-      document.querySelector('label[for="categorySelect"]')?.removeAttribute('for'); // no-op preserve
       fillCategories();
     }
 
@@ -282,13 +332,18 @@
       tbody.innerHTML = state.results.map((r,i)=>{
         const loc = [r.city,r.country].filter(Boolean).join(', ');
         const cats = (r.categories||[]).join(', ');
+        const emailCell = r.email ? `<a class="link" href="mailto:${escapeHtml(r.email)}">${escapeHtml(r.email)}</a>` : '';
+        const siteCell = r.website ? `<a class="link" href="${escapeHtml(r.website)}" target="_blank" rel="noopener">Website</a>` : '';
+        const googleCell = r.google_url ? `<a class="link" href="${escapeHtml(r.google_url)}" target="_blank" rel="noopener">View on Google</a>` : '';
         return `<tr data-idx="${i}">
           <td>${escapeHtml(r.name||'')}</td>
           <td>${escapeHtml(loc)}</td>
           <td class="td-rating" style="${state.mode==='influencer'?'display:none':''}">${r.rating??''}</td>
           <td class="td-reviews" style="${state.mode==='influencer'?'display:none':''}">${r.user_ratings_total??''}</td>
-          <td>${escapeHtml(r.phone||'')}</td>
-          <td>${escapeHtml(r.email||'')}</td>
+          <td class="td-phone">${escapeHtml(r.phone||'')}</td>
+          <td class="td-email">${emailCell}</td>
+          <td class="td-site">${siteCell}</td>
+          <td class="td-links">${googleCell}</td>
           <td>${escapeHtml(cats)}</td>
           <td class="td-followers" style="${state.mode==='influencer'?'':'display:none'}">${r.followers??''}</td>
           <td class="td-deal" style="${state.mode==='influencer'?'':'display:none'}">${escapeHtml(r.deal_type||'')}</td>
@@ -317,7 +372,7 @@
     function escapeHtml(s){ return (s||'').replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[m])) }
     function formatCurrency(n){ try{ return new Intl.NumberFormat(undefined,{style:'currency',currency:state.currency}).format(n) }catch{ return n } }
 
-    // ------- SEARCH (Mock + Hooks for APIs) -------
+    // ------- SEARCH -------
     document.getElementById('btnSearch').addEventListener('click', async ()=>{
       const country = countrySelect.value; const city = citySelect.value; const cat = categorySelect.value;
       if(!country){ alert('Please select a country'); return; }
@@ -339,33 +394,32 @@
 
     document.getElementById('btnClear').addEventListener('click',()=>{ state.results=[]; renderRows(); });
 
-    // Mock search using placeholder data; replace with real API calls (see functions below)
     async function searchBoutiques({country,city,cat}){
-      // If Google key is present, you can load Maps JS and use Places library (client-side) — see hook below.
       if(state.keys.google){
-        try { const real = await googlePlacesSearch({country,city,cat}); if(real?.length) return real; } catch(e){ console.warn(e); }
+        try {
+          const real = await googlePlacesSearch({country,city,cat});
+          if(real?.length) return real;
+        } catch(e){ console.warn(e); }
       }
-      // Fallback mock data
+      // fallback demo
       return [
-        { name:'Lumière Boutique', country:codeToName(country), city:city||'—', rating:4.6, user_ratings_total:128, phone:'+1 555-0100', email:'info@lumiereshop.com', categories:[cat||'clothing_store'] },
-        { name:'Atelier Rue', country:codeToName(country), city:city||'—', rating:4.4, user_ratings_total:86, phone:'+1 555-0101', email:'hello@atelierrue.com', categories:[cat||'clothing_store'] },
+        { name:'Lumière Boutique', country:codeToName(country), city:city||'—', rating:4.6, user_ratings_total:128, phone:'+1 555-0100', email:'info@lumiereshop.com', website:'', google_url:'', categories:[cat||'clothing_store'] },
+        { name:'Atelier Rue', country:codeToName(country), city:city||'—', rating:4.4, user_ratings_total:86, phone:'+1 555-0101', email:'hello@atelierrue.com', website:'', google_url:'', categories:[cat||'clothing_store'] },
       ];
     }
 
     async function searchInfluencers({country,city,cat,minF,maxF,minB,maxB}){
-      // Placeholder: integrate with an influencer database/API via your own proxy in production
       const mock = [
-        { name:'@style.with.noa', country:codeToName(country), city:city||'—', followers:38000, phone:'', email:'inbox@stylewithnoa.com', categories:[cat||'fashion'], deal_type:'item+%', budget:0 },
-        { name:'@urban.eden', country:codeToName(country), city:city||'—', followers:92000, phone:'', email:'hi@urbaneden.co', categories:[cat||'lifestyle'], deal_type:'money', budget:1200 },
+        { name:'@style.with.noa', country:codeToName(country), city:city||'—', followers:38000, phone:'', email:'inbox@stylewithnoa.com', website:'', google_url:'', categories:[cat||'fashion'], deal_type:'item+%', budget:0 },
+        { name:'@urban.eden', country:codeToName(country), city:city||'—', followers:92000, phone:'', email:'hi@urbaneden.co', website:'', google_url:'', categories:[cat||'lifestyle'], deal_type:'money', budget:1200 },
       ];
       return mock.filter(r=> r.followers>=minF && r.followers<=maxF && r.budget>=minB && r.budget<=maxB);
     }
 
     async function searchExhibits({country,city,cat,dateFrom,dateTo}){
-      // TODO: connect to Eventbrite/Ticketmaster/Expo APIs via serverless proxy. For now, mock.
       return [
-        { name:'City Fashion Market', country:codeToName(country), city:city||'—', phone:'', email:'apply@citymarket.com', categories:[cat||'market'] },
-        { name:'Modern Design Pop‑Up', country:codeToName(country), city:city||'—', phone:'', email:'contact@modernpopup.org', categories:[cat||'pop-up'] },
+        { name:'City Fashion Market', country:codeToName(country), city:city||'—', phone:'', email:'apply@citymarket.com', website:'', google_url:'', categories:[cat||'market'] },
+        { name:'Modern Design Pop-Up', country:codeToName(country), city:city||'—', phone:'', email:'contact@modernpopup.org', website:'', google_url:'', categories:[cat||'pop-up'] },
       ];
     }
 
@@ -375,9 +429,9 @@
     document.getElementById('btnExport').addEventListener('click',()=>{
       if(!state.results.length){ alert('No results to export yet. Run a search first.'); return; }
       const headers = state.mode==='influencer'
-        ? ['name','country','city','followers','deal_type','budget','phone','email','categories']
-        : ['name','country','city','rating','user_ratings_total','phone','email','categories'];
-      const rows = state.results.map(r=> headers.map(h=> Array.isArray(r[h])? r[h].join('|') : (r[h]??'') ));
+        ? ['name','country','city','followers','deal_type','budget','phone','email','website','google_url','categories']
+        : ['name','country','city','rating','user_ratings_total','phone','email','website','google_url','categories'];
+      const rows = state.results.map(r=> headers.map(h=> Array.isArray(r[h])? r[h].join('|') : (r[h]??'')));
       const csv = [headers.join(','), ...rows.map(r=> r.map(v=>`"${String(v).replaceAll('"','""')}"`).join(','))].join('\n');
       const blob = new Blob([csv],{type:'text/csv;charset=utf-8;'});
       const url = URL.createObjectURL(blob);
@@ -400,8 +454,7 @@
       alert('Saved locally. Remember to restrict your keys!');
     });
 
-    // ------- GOOGLE PLACES (client hook) -------
-    // This uses the Maps JavaScript API (client-safe with HTTP referrer restrictions). It performs a Text Search.
+    // ------- GOOGLE PLACES (women-focused, filtered, 3 pages) -------
     async function googlePlacesSearch({country,city,cat}){
       const key = state.keys.google; if(!key) return [];
       await loadGoogleMaps(key);
@@ -409,34 +462,63 @@
         try{
           const service = new google.maps.places.PlacesService(document.createElement('div'));
           const queryParts = [];
-          if(cat) queryParts.push(cat.replace('_',' ')); else queryParts.push('clothing boutique');
+
+          // Women-focused query by default
+          if(cat) queryParts.push(cat.replace('_',' '));
+          else queryParts.push('women boutique clothing');
+
           if(city) queryParts.push(city);
           queryParts.push(codeToName(country));
-          const request = { query: queryParts.join(' '), fields:['place_id','name','rating','user_ratings_total','formatted_address','formatted_phone_number','types','website'] };
-          service.textSearch({query: request.query}, async (results,status)=>{
-            if(status!==google.maps.places.PlacesServiceStatus.OK || !results){ resolve([]); return; }
-            const basic = results.slice(0,12); // limit
-            // Enrich details for phone/website
-            const withDetails = await Promise.all(basic.map(r=> new Promise(res=>{
-              service.getDetails({placeId:r.place_id, fields:['name','rating','user_ratings_total','types','formatted_phone_number','website','address_components','url']},(det)=>{
+
+          const query = queryParts.join(' ');
+          const all = [];
+
+          const chainBlock = /(h&m|zara|uniqlo|gap|forever\s?21|primark|mango|bershka|pull\s?&\s?bear|stradivarius|old\s?navy|target|walmart|macys|bloomingdale|nordstrom)/i;
+
+          const handlePage = (results, status, pagination) => {
+            if(status!==google.maps.places.PlacesServiceStatus.OK || !results){
+              finalize(); return;
+            }
+            const filtered = results.filter(r => !chainBlock.test(r.name||''));
+            all.push(...filtered);
+            if (pagination && pagination.hasNextPage && all.length < 60) {
+              // nextPage requires slight delay per Google docs
+              setTimeout(()=> pagination.nextPage(), 1500);
+            } else {
+              finalize();
+            }
+          };
+
+          const finalize = async () => {
+            const limited = all.slice(0, 60);
+            const detailed = await Promise.all(limited.map(r=> new Promise(res=>{
+              service.getDetails({
+                placeId:r.place_id,
+                fields:['name','rating','user_ratings_total','types','formatted_phone_number','website','address_components','url']
+              }, det=>{
                 const parsed = {
                   name: det?.name||r.name,
                   rating: det?.rating||r.rating,
                   user_ratings_total: det?.user_ratings_total||r.user_ratings_total,
                   phone: det?.formatted_phone_number||'',
-                  email: '', // Google doesn't provide; keep blank for manual fill
+                  email: '', // Not provided by Google; keep editable
+                  website: det?.website||'',
+                  google_url: det?.url||'',
                   categories: det?.types||r.types||[],
                 };
-                // attempt to infer city/country from address components
                 const comps = det?.address_components||[];
-                const city = comps.find(c=>c.types.includes('locality'))?.long_name || comps.find(c=>c.types.includes('postal_town'))?.long_name || '';
-                const country = comps.find(c=>c.types.includes('country'))?.long_name || '';
-                parsed.city = city; parsed.country = country;
+                const cityComp = comps.find(c=>c.types.includes('locality'))?.long_name
+                              || comps.find(c=>c.types.includes('postal_town'))?.long_name
+                              || '';
+                const countryComp = comps.find(c=>c.types.includes('country'))?.long_name || '';
+                parsed.city = cityComp; parsed.country = countryComp;
                 res(parsed);
               });
             })));
-            resolve(withDetails);
-          });
+            resolve(detailed);
+          };
+
+          service.textSearch({ query }, handlePage);
         }catch(e){ reject(e) }
       });
     }
@@ -460,3 +542,4 @@
   </script>
 </body>
 </html>
+
