@@ -130,7 +130,7 @@
                   <th class="th-email">Email</th>
                   <th class="th-site">Website</th>
                   <th class="th-links">Links</th>
-                  <th class="th-cats">Categories</th>
+                  <!-- Categories column removed per your request -->
                   <th class="th-followers" style="display:none">Followers</th>
                   <th class="th-deal" style="display:none">Deal Type</th>
                   <th class="th-budget" style="display:none">Budget</th>
@@ -195,16 +195,16 @@
 
   <script>
     // ---------------- CONFIG ----------------
-    const TARGET_RESULTS_BOUTIQUES = 180; // aim high; streamed + paginated
-    const MAX_VARIANTS_PER_SEARCH = 10;   // safety
+    const TARGET_RESULTS_BOUTIQUES = 180;
+    const MAX_VARIANTS_PER_SEARCH = 10;
     const VARIANTS = [
       'boutique women fashion designer independent',
       'women boutique','independent boutique','designer boutique','womenswear boutique',
       'women clothing store','local fashion boutique','artisan boutique',
       'evening dresses boutique','modest fashion boutique','formal wear boutique'
     ];
-    const TEXTSEARCH_PAGE_LIMIT = 60;     // per query cap from Google
-    const DETAILS_CHUNK = 10;             // inflate 10 at a time for smooth UI
+    const TEXTSEARCH_PAGE_LIMIT = 60;
+    const DETAILS_CHUNK = 10;
 
     // --------- DATASETS ----------
     const COUNTRIES = [
@@ -329,7 +329,6 @@
       const sorted = [...state.results].sort((a,b)=> statusWeight(a.status||'') - statusWeight(b.status||''));
       tbody.innerHTML = sorted.map((r)=>{
         const loc = [r.city,r.country].filter(Boolean).join(', ');
-        const cats = (r.categories||[]).join(', ');
 
         const emailCell = r.email
           ? `<div class="email-cell">
@@ -361,7 +360,6 @@
           <td class="td-email">${emailCell}</td>
           <td class="td-site">${siteCell}</td>
           <td class="td-links">${googleCell}</td>
-          <td>${escapeHtml(cats)}</td>
           <td class="td-followers" style="${state.mode==='influencer'?'':'display:none'}">${r.followers??''}</td>
           <td class="td-deal" style="${state.mode==='influencer'?'':'display:none'}">${escapeHtml(r.deal_type||'')}</td>
           <td class="td-budget" style="${state.mode==='influencer'?'':'display:none'}">${r.budget? formatCurrency(r.budget):''}</td>
@@ -507,7 +505,6 @@
       const base = (cat ? cat.replace('_',' ') : VARIANTS[0]);
       const variants = [base, ...VARIANTS.slice(1)].slice(0, MAX_VARIANTS_PER_SEARCH);
 
-      // init streaming state
       state.loading = true;
       state.cancel = false;
       document.getElementById('btnCancelFetch').style.display = 'inline-block';
@@ -549,7 +546,7 @@
           const slice = tsResults.slice(i, i+DETAILS_CHUNK);
           const detailed = await Promise.all(slice.map(inflatePlaceDetails));
           pushBatch(detailed);
-          await new Promise(r=>setTimeout(r, 0)); // yield to UI
+          await new Promise(r=>setTimeout(r, 0));
           if(state.allResults.length >= TARGET_RESULTS_BOUTIQUES) break;
         }
         if(state.allResults.length >= TARGET_RESULTS_BOUTIQUES) break;
@@ -748,7 +745,6 @@
       }
       shortlistWrap.innerHTML = state.shortlist.map((r)=>{
         const id = makeItemId(r);
-        const cats = (r.categories||[]).join(', ');
         const site = r.website ? `<a class="link" href="${escapeHtml(r.website)}" target="_blank" rel="noopener">Website</a>` : '';
         const ggl = r.google_url ? `<a class="link" href="${escapeHtml(r.google_url)}" target="_blank" rel="noopener">View on Google</a>` : '';
         const gsr = r.google_search ? `<a class="link" href="${escapeHtml(r.google_search)}" target="_blank" rel="noopener">Google Search</a>` : '';
@@ -775,7 +771,6 @@
               <div>${ggl}</div>
               <div>${gsr}</div>
             </div>
-            <div class="muted mb6"><b>Categories:</b> ${escapeHtml(cats)}</div>
             <label>Notes</label>
             <textarea data-notes="${escapeHtml(id)}" placeholder="e.g., Contacted on Aug 14, waiting for collaboration terms...">${r.notes||''}</textarea>
           </div>
