@@ -40,9 +40,10 @@ textarea{min-height:84px;resize:vertical}
 .kpi-num{font-weight:700;font-size:22px}
 .kpi-txt{font-weight:700}
 
-table{width:100%;border-collapse:separate;border-spacing:0 8px}
+/* Tables */
+table{width:100%;border-collapse:separate;border-spacing:0 8px;table-layout:fixed}
 thead th{font-size:12px;color:var(--sub);font-weight:600;text-align:left;padding:0 12px}
-tbody td{background:#0f1420;border:1px solid rgba(255,255,255,.06);padding:14px 12px;vertical-align:top}
+tbody td{background:#0f1420;border:1px solid rgba(255,255,255,.06);padding:14px 12px;vertical-align:top;word-wrap:break-word;overflow-wrap:anywhere}
 tbody tr td:first-child{border-top-left-radius:10px;border-bottom-left-radius:10px}
 tbody tr td:last-child{border-top-right-radius:10px;border-bottom-right-radius:10px}
 
@@ -50,11 +51,12 @@ tbody tr td:last-child{border-top-right-radius:10px;border-bottom-right-radius:1
 .divider{height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.12),transparent);margin:4px 0}
 .mb6{margin-bottom:6px}
 
-th.th-phone, td.td-phone { min-width: 180px; }
-th.th-site,  td.td-site  { min-width: 180px; }
-th.th-links, td.td-links { min-width: 200px; }
-th.th-email, td.td-email { min-width: 240px; }
-.email-cell{display:flex;gap:6px;align-items:center}
+/* Narrower columns so more rows fit */
+th.th-phone, td.td-phone { min-width: 150px; }
+th.th-site,  td.td-site  { min-width: 140px; }
+th.th-links, td.td-links { min-width: 160px; }
+th.th-email, td.td-email { min-width: 180px; }
+.email-cell{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
 
 a.link{color:#a5b4fc;text-decoration:none}
 a.link:hover{text-decoration:underline}
@@ -65,7 +67,7 @@ a.link:hover{text-decoration:underline}
 .btn-mini{font-size:12px;padding:4px 8px;border-radius:8px;border:1px solid rgba(255,255,255,.18);background:#0e121b;color:var(--ink);cursor:pointer}
 
 /* Status pills */
-.status-wrap{display:flex;gap:6px;align-items:center}
+.status-wrap{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
 .status-pill{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;border:1px solid rgba(255,255,255,.16);cursor:pointer;font-size:12px;user-select:none}
 .status-green{background:rgba(34,197,94,.12);border-color:rgba(34,197,94,.35);color:#86efac}
 .status-yellow{background:rgba(245,158,11,.12);border-color:rgba(245,158,11,.35);color:#fcd34d}
@@ -99,19 +101,20 @@ a.link:hover{text-decoration:underline}
 }
 @keyframes spin{ to{ transform:rotate(360deg) } }
 
-/* Results panel with internal scroll + sticky footer */
+/* Results panel with internal scroll + sticky footer
+   Taller panel so ~10 rows are visible while scrolling */
 .results-panel{
   display:flex;
   flex-direction:column;
-  /* Adjust this offset so the results panel fits your screen:
-     (header + switcher + filters + KPIs + margins) */
-  height: calc(100vh - 320px);
-  min-height: 420px;
+  /* Decrease this offset so the panel is taller (fits ~10 rows) */
+  height: calc(100vh - 260px);
+  min-height: 520px;
 }
 .results-scroll{
   flex: 1 1 auto;
   overflow-y: auto;
-  padding-bottom: 64px; /* so last row isn’t hidden under footer */
+  overflow-x: hidden;           /* prevent horizontal “stretch” */
+  padding-bottom: 64px;         /* so last row isn’t hidden under footer */
 }
 .results-footer{
   position: sticky;
