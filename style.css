@@ -51,7 +51,7 @@ tbody tr td:last-child{border-top-right-radius:10px;border-bottom-right-radius:1
 .divider{height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.12),transparent);margin:4px 0}
 .mb6{margin-bottom:6px}
 
-/* Narrower columns so more rows fit */
+/* Narrower columns */
 th.th-phone, td.td-phone { min-width: 150px; }
 th.th-site,  td.td-site  { min-width: 140px; }
 th.th-links, td.td-links { min-width: 160px; }
@@ -101,20 +101,18 @@ a.link:hover{text-decoration:underline}
 }
 @keyframes spin{ to{ transform:rotate(360deg) } }
 
-/* Results panel with internal scroll + sticky footer
-   Taller panel so ~10 rows are visible while scrolling */
+/* Results panel — taller so ~10 rows visible */
 .results-panel{
   display:flex;
   flex-direction:column;
-  /* Decrease this offset so the panel is taller (fits ~10 rows) */
-  height: calc(100vh - 260px);
+  height: calc(100vh - 260px); /* adjust if needed */
   min-height: 520px;
 }
 .results-scroll{
   flex: 1 1 auto;
   overflow-y: auto;
-  overflow-x: hidden;           /* prevent horizontal “stretch” */
-  padding-bottom: 64px;         /* so last row isn’t hidden under footer */
+  overflow-x: hidden;
+  padding-bottom: 64px; /* so last row isn’t hidden under footer */
 }
 .results-footer{
   position: sticky;
