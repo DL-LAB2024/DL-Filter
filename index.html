@@ -105,11 +105,10 @@
     </div>
 
     <div class="two-col">
-      <!-- RESULTS PANEL (scroll inside, sticky footer) -->
+      <!-- RESULTS PANEL -->
       <div class="panel">
         <div class="controls results-panel" id="resultsPanel">
 
-          <!-- Header -->
           <div class="row space-between">
             <div class="strong">Results</div>
             <div class="help">Click a row to edit email/phone and (for influencers) deal & budget. Use status pills to mark relevance.</div>
@@ -130,7 +129,7 @@
                   <th class="th-email">Email</th>
                   <th class="th-site">Website</th>
                   <th class="th-links">Links</th>
-                  <!-- Categories column removed per your request -->
+                  <!-- Categories column removed -->
                   <th class="th-followers" style="display:none">Followers</th>
                   <th class="th-deal" style="display:none">Deal Type</th>
                   <th class="th-budget" style="display:none">Budget</th>
@@ -203,7 +202,7 @@
       'women clothing store','local fashion boutique','artisan boutique',
       'evening dresses boutique','modest fashion boutique','formal wear boutique'
     ];
-    const TEXTSEARCH_PAGE_LIMIT = 60;
+    const TEXTSEARCH_PAGE_LIMIT = 60; // per query cap
     const DETAILS_CHUNK = 10;
 
     // --------- DATASETS ----------
@@ -560,13 +559,15 @@
       return state.results;
     }
 
-    // TextSearch with pagination (up to ~60 per query)
-    async function googlePlacesTextSearch({country,city,query,typeBias}){
+    // TextSearch with strong city+country hint + geocoded location bias
+    async function googlePlacesTextSearch({country, city, query, typeBias}){
       return new Promise((resolve,reject)=>{
         try{
           const service = new google.maps.places.PlacesService(document.createElement('div'));
           const chainBlock = /(h&m|zara|uniqlo|gap|forever\s?21|primark|mango|bershka|pull\s?&\s?bear|stradivarius|old\s?navy|target|walmart|macys|bloomingdale|nordstrom)/i;
           const all = [];
+
+          const fullQuery = [query, city || '', codeToName(country) || ''].join(' ').trim();
 
           const handlePage = (results, status, pagination) => {
             if(status!==google.maps.places.PlacesServiceStatus.OK || !results){ finalize(); return; }
@@ -580,17 +581,18 @@
           };
           const finalize = () => resolve(all);
 
-          let request = { query };
+          const request = { query: fullQuery };
           if (city) {
-            geocodeCityCenter(codeToName(country), city).then(center=>{
+            geocodeCityCenter(country, city).then(center=>{
               if(center){
                 request.location = center;
-                request.radius = 20000;
-                if(typeBias) request.type = typeBias;
+                request.radius = 30000; // stronger, ~30km
               }
+              if(typeBias) request.type = typeBias;
               service.textSearch(request, handlePage);
             });
           } else {
+            if(typeBias) request.type = typeBias;
             service.textSearch(request, handlePage);
           }
         }catch(e){ reject(e) }
@@ -630,7 +632,7 @@
       });
     }
 
-    // ---- Influencers / Exhibits (mock or Places where possible) ----
+    // ---- Influencers / Exhibits ----
     async function searchInfluencers({country,city,cat,minF,maxF,minB,maxB}){
       const mock = [
         { name:'@style.with.noa', country:codeToName(country), city:city||'—', followers:38000, phone:'', email:'inbox@stylewithnoa.com', website:'', google_url:'', google_search:'', categories:[cat||'fashion'], deal_type:'item+%', budget:0 },
@@ -647,8 +649,8 @@
         ];
       }
       await loadGoogleMaps(state.keys.google);
-      const base = cat || 'fashion pop-up market trade show bazaar sample sale';
-      const chunk = await googlePlacesTextSearch({country,city,query:base});
+      const base = (cat && cat.trim()) ? cat : 'fashion pop-up market trade show bazaar sample sale';
+      const chunk = await googlePlacesTextSearch({ country, city, query: base, typeBias: 'point_of_interest' });
       const detailed = await Promise.all(chunk.slice(0, TEXTSEARCH_PAGE_LIMIT).map(inflatePlaceDetails));
       return detailed;
     }
@@ -772,7 +774,7 @@
               <div>${gsr}</div>
             </div>
             <label>Notes</label>
-            <textarea data-notes="${escapeHtml(id)}" placeholder="e.g., Contacted on Aug 14, waiting for collaboration terms...">${r.notes||''}</textarea>
+            <textarea data-notes="${escapeHtml(id)}" placeholder="e.g., Contacted, waiting for collab terms...">${r.notes||''}</textarea>
           </div>
         `;
       }).join('');
@@ -827,12 +829,23 @@
     });
 
     // ---------- GOOGLE HELPERS ----------
-    async function geocodeCityCenter(countryName, cityName){
+    // Strict geocode with country restriction
+    async function geocodeCityCenter(countryCode, cityName){
       return new Promise((resolve)=>{
         const geocoder = new google.maps.Geocoder();
-        geocoder.geocode({ address: [cityName, countryName].filter(Boolean).join(', ') }, (res, status)=>{
-          if(status === 'OK' && res && res[0]) resolve(res[0].geometry.location);
-          else resolve(null);
+        geocoder.geocode({
+          address: cityName,
+          componentRestrictions: { country: countryCode.toLowerCase() }
+        }, (res, status)=>{
+          if(status === 'OK' && res && res[0]) {
+            resolve(res[0].geometry.location);
+          } else {
+            const countryName = codeToName(countryCode);
+            geocoder.geocode({ address: [cityName, countryName].join(', ') }, (res2, status2)=>{
+              if(status2 === 'OK' && res2 && res2[0]) resolve(res2[0].geometry.location);
+              else resolve(null);
+            });
+          }
         });
       });
     }
