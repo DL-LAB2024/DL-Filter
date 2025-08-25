@@ -24,7 +24,7 @@
         <div class="logo-badge">D</div>
         <div>
           <div class="h1">DERAL Leads Finder</div>
-          <div class="sub">Find boutiques, influencers, and exhibits — mark relevance, take notes, export.</div>
+          <div class="sub">Women’s multi-brand boutiques • influencers • exhibits — shortlist, notes, export.</div>
         </div>
       </div>
       <div class="row">
@@ -42,7 +42,7 @@
           <div class="pill" data-mode="influencer">Influencers</div>
           <div class="pill" data-mode="exhibit">Exhibits</div>
         </div>
-        <div class="help">Tip: Filters below update based on the selection above. Mark results green/yellow/red to organize and shortlist.</div>
+        <div class="help">Tip: Mark items green/yellow/red to organize. Green sends to the shortlist on the right.</div>
       </div>
     </div>
 
@@ -111,7 +111,7 @@
 
           <div class="row space-between">
             <div class="strong">Results</div>
-            <div class="help">Click a row to edit email/phone and (for influencers) deal & budget. Use status pills to mark relevance.</div>
+            <div class="help">Thumbnails come from Google Maps Photos (when available).</div>
           </div>
           <div class="divider"></div>
 
@@ -121,6 +121,7 @@
               <thead>
                 <tr>
                   <th>Status</th>
+                  <th>Preview</th>
                   <th>Name</th>
                   <th>Location</th>
                   <th class="th-rating">Rating</th>
@@ -129,7 +130,6 @@
                   <th class="th-email">Email</th>
                   <th class="th-site">Website</th>
                   <th class="th-links">Links</th>
-                  <!-- Categories column removed -->
                   <th class="th-followers" style="display:none">Followers</th>
                   <th class="th-deal" style="display:none">Deal Type</th>
                   <th class="th-budget" style="display:none">Budget</th>
@@ -189,18 +189,28 @@
       </div>
     </div>
 
-    <div class="help footnote">⚠️ Google Places rarely returns emails. Use “Website” or “Google Search / Find email” to locate a public address, then click a row to paste it. Shortlist & notes are saved in your browser.</div>
+    <div class="help footnote">
+      ⚠️ Google Places rarely returns emails. Use “Website” or “Google Search / Find email” to locate a public address, then click a row to paste it. Shortlist & notes are saved in your browser.
+    </div>
   </div>
 
   <script>
     // ---------------- CONFIG ----------------
-    const TARGET_RESULTS_BOUTIQUES = 180;
-    const MAX_VARIANTS_PER_SEARCH = 10;
+    const TARGET_RESULTS_BOUTIQUES = 200;       // aim higher than 180
+    const MAX_VARIANTS_PER_SEARCH = 12;
     const VARIANTS = [
-      'boutique women fashion designer independent',
-      'women boutique','independent boutique','designer boutique','womenswear boutique',
-      'women clothing store','local fashion boutique','artisan boutique',
-      'evening dresses boutique','modest fashion boutique','formal wear boutique'
+      'women multi brand fashion boutique',
+      'multi brand womenswear boutique',
+      'designer womenswear boutique independent',
+      'curated womens fashion boutique',
+      'women clothing multi brand store',
+      'independent womenswear boutique',
+      'evening dresses boutique womenswear',
+      'modest fashion womens boutique',
+      'resort wear womens boutique',
+      'local designer womens boutique',
+      'artisan womenswear boutique',
+      'occasion dress womens boutique'
     ];
     const TEXTSEARCH_PAGE_LIMIT = 60; // per query cap
     const DETAILS_CHUNK = 10;
@@ -249,7 +259,7 @@
       ]},
     ];
 
-    const BOUTIQUE_CATS = ['clothing_store','shoe_store','jewelry_store','shopping_mall'];
+    const BOUTIQUE_CATS = ['clothing_store']; // keep minimal; we push relevance via query keywords
     const INFLUENCER_CATS = ['fashion','beauty','lifestyle','motherhood','travel','fitness'];
     const EXHIBIT_CATS = ['fashion trade show','design fair','market','pop-up'];
 
@@ -321,6 +331,30 @@
       renderRows();
     }
 
+    // -------- Boutique relevance filters --------
+    const CHAIN_BLOCK = /(h&m|zara|uniqlo|gap|forever\s?21|primark|mango|bershka|pull\s?&\s?bear|stradivarius|old\s?navy|target|walmart|macys|bloomingdale|nordstrom|nike|adidas|puma|reebok|under\s?armour|lacoste|tommy\s?hilfiger|ralph\s?lauren|levi'?s|victoria'?s?\s?secret|cos\b|& other stories|aritzia|shein|boohoo)/i;
+    const MENS_ONLY_HINTS = /\b(menswear|men'?s\s?store|barber|tailor(ing)?\s?for\s?men|suits\s?for\s?men|gentlemen|mens\s?fashion\s?only)\b/i;
+
+    function looksRelevantPlaceName(name){
+      if(!name) return true;
+      if (CHAIN_BLOCK.test(name)) return false;
+      if (MENS_ONLY_HINTS.test(name.toLowerCase())) return false;
+      return true;
+    }
+
+    // --- small heuristic to nudge toward womens/multi-brand using name+types ---
+    function scoreRelevanceByTypes(name, types=[]) {
+      let s = 0;
+      const n = (name||'').toLowerCase();
+      const t = (types||[]).join(' ').toLowerCase();
+      if(/boutique|womens|women|ladies|dress|atelier|designer|curated/.test(n+t)) s+=2;
+      if(/multi[-\s]?brand|multi\s?label|concept\s?store/.test(n+t)) s+=3;
+      if(/bridal|evening|modest|resort/.test(n+t)) s+=1;
+      if(/kids|children|menswear|men's|barber/.test(n+t)) s-=2;
+      if(CHAIN_BLOCK.test(n)) s-=5;
+      return s;
+    }
+
     // -------- RENDERING --------
     function statusWeight(s){ return s==='green'?0 : s==='yellow'?1 : s==='red'?3 : 2; }
 
@@ -328,6 +362,10 @@
       const sorted = [...state.results].sort((a,b)=> statusWeight(a.status||'') - statusWeight(b.status||''));
       tbody.innerHTML = sorted.map((r)=>{
         const loc = [r.city,r.country].filter(Boolean).join(', ');
+
+        const preview = r.photo_url
+          ? `<a href="${escapeHtml(r.google_url||r.google_search||'#')}" target="_blank" rel="noopener"><img class="thumb" src="${escapeHtml(r.photo_url)}" alt="preview"></a>`
+          : '';
 
         const emailCell = r.email
           ? `<div class="email-cell">
@@ -351,6 +389,7 @@
         const origIdx = state.results.indexOf(r);
         return `<tr data-idx="${origIdx}">
           <td>${statusPills}</td>
+          <td class="td-thumb">${preview}</td>
           <td>${escapeHtml(r.name||'')}</td>
           <td>${escapeHtml(loc)}</td>
           <td class="td-rating" style="${state.mode==='influencer'?'display:none':''}">${r.rating??''}</td>
@@ -495,14 +534,14 @@
     async function searchBoutiquesMulti({country,city,cat}){
       if(!state.keys.google){
         return [
-          { name:'Lumière Boutique', country:codeToName(country), city:city||'—', rating:4.6, user_ratings_total:128, phone:'+1 555-0100', email:'', website:'', google_url:'', google_search:'', categories:[cat||'clothing_store'] },
-          { name:'Atelier Rue', country:codeToName(country), city:city||'—', rating:4.4, user_ratings_total:86, phone:'+1 555-0101', email:'', website:'', google_url:'', google_search:'', categories:[cat||'clothing_store'] },
+          { name:'Lumière Boutique', country:codeToName(country), city:city||'—', rating:4.6, user_ratings_total:128, phone:'+1 555-0100', email:'', website:'', google_url:'', google_search:'', photo_url:'' },
+          { name:'Atelier Rue', country:codeToName(country), city:city||'—', rating:4.4, user_ratings_total:86, phone:'+1 555-0101', email:'', website:'', google_url:'', google_search:'', photo_url:'' },
         ];
       }
       await loadGoogleMaps(state.keys.google);
 
-      const base = (cat ? cat.replace('_',' ') : VARIANTS[0]);
-      const variants = [base, ...VARIANTS.slice(1)].slice(0, MAX_VARIANTS_PER_SEARCH);
+      const base = 'women multi brand boutique';
+      const variants = [ (cat ? (cat.replace('_',' ') + ' women boutique') : base), ...VARIANTS.slice(0, MAX_VARIANTS_PER_SEARCH-1)];
 
       state.loading = true;
       state.cancel = false;
@@ -522,6 +561,10 @@
         for(const r of arr){
           const id = r.place_id || r.google_url || `${r.name}|${r.city}|${r.country}`;
           if(seen.has(id)) continue;
+          // final relevance gate on name/types
+          if(!looksRelevantPlaceName(r.name)) continue;
+          if(scoreRelevanceByTypes(r.name, r.categories) < 1) continue;
+
           seen.add(id);
           state.allResults.push(r);
           if(state.allResults.length >= TARGET_RESULTS_BOUTIQUES) break;
@@ -559,19 +602,18 @@
       return state.results;
     }
 
-    // TextSearch with strong city+country hint + geocoded location bias
+    // TextSearch with strong city+country hint + geocoded location bias + anti-chain filter
     async function googlePlacesTextSearch({country, city, query, typeBias}){
       return new Promise((resolve,reject)=>{
         try{
           const service = new google.maps.places.PlacesService(document.createElement('div'));
-          const chainBlock = /(h&m|zara|uniqlo|gap|forever\s?21|primark|mango|bershka|pull\s?&\s?bear|stradivarius|old\s?navy|target|walmart|macys|bloomingdale|nordstrom)/i;
           const all = [];
 
           const fullQuery = [query, city || '', codeToName(country) || ''].join(' ').trim();
 
           const handlePage = (results, status, pagination) => {
             if(status!==google.maps.places.PlacesServiceStatus.OK || !results){ finalize(); return; }
-            const filtered = results.filter(r => !chainBlock.test(r.name||''));
+            const filtered = results.filter(r => looksRelevantPlaceName(r.name));
             all.push(...filtered);
             if (pagination && pagination.hasNextPage && all.length < TEXTSEARCH_PAGE_LIMIT) {
               setTimeout(()=> pagination.nextPage(), 1500);
@@ -586,7 +628,7 @@
             geocodeCityCenter(country, city).then(center=>{
               if(center){
                 request.location = center;
-                request.radius = 30000; // stronger, ~30km
+                request.radius = 30000; // ~30km
               }
               if(typeBias) request.type = typeBias;
               service.textSearch(request, handlePage);
@@ -599,13 +641,13 @@
       });
     }
 
-    // Inflate details
+    // Inflate details (+photo)
     async function inflatePlaceDetails(ts){
       return new Promise((res)=>{
         const service = new google.maps.places.PlacesService(document.createElement('div'));
         service.getDetails({
           placeId: ts.place_id,
-          fields:['name','rating','user_ratings_total','types','formatted_phone_number','website','address_components','url']
+          fields:['name','rating','user_ratings_total','types','formatted_phone_number','website','address_components','url','photos']
         }, det=>{
           const parsed = {
             place_id: ts.place_id,
@@ -619,12 +661,22 @@
             categories: det?.types||ts.types||[],
           };
           const comps = det?.address_components||[];
-          const cityComp = comps.find(c=>c.types.includes('locality'))?.long_name
-                        || comps.find(c=>c.types.includes('postal_town'))?.long_name || '';
-          const countryComp = comps.find(c=>c.types.includes('country'))?.long_name || '';
+          const cityComp = comps?.find(c=>c.types.includes('locality'))?.long_name
+                        || comps?.find(c=>c.types.includes('postal_town'))?.long_name || '';
+          const countryComp = comps?.find(c=>c.types.includes('country'))?.long_name || '';
           parsed.city = cityComp; parsed.country = countryComp;
 
-          const qSearch = encodeURIComponent(`${parsed.name} ${parsed.city||''} ${parsed.country||''} boutique`);
+          // Photo URL (thumbnail)
+          try{
+            const photoObj = (det?.photos && det.photos[0]) || (ts?.photos && ts.photos[0]) || null;
+            if(photoObj && typeof photoObj.getUrl === 'function'){
+              parsed.photo_url = photoObj.getUrl({maxWidth: 140, maxHeight: 140});
+            } else {
+              parsed.photo_url = '';
+            }
+          }catch{ parsed.photo_url=''; }
+
+          const qSearch = encodeURIComponent(`${parsed.name} ${parsed.city||''} ${parsed.country||''} boutique womenswear`);
           parsed.google_search = `https://www.google.com/search?q=${qSearch}`;
 
           res(parsed);
@@ -632,7 +684,7 @@
       });
     }
 
-    // ---- Influencers / Exhibits ----
+    // ---- Influencers / Exhibits (same as before, exhibits via Places keyword) ----
     async function searchInfluencers({country,city,cat,minF,maxF,minB,maxB}){
       const mock = [
         { name:'@style.with.noa', country:codeToName(country), city:city||'—', followers:38000, phone:'', email:'inbox@stylewithnoa.com', website:'', google_url:'', google_search:'', categories:[cat||'fashion'], deal_type:'item+%', budget:0 },
@@ -644,12 +696,12 @@
     async function searchExhibits({country,city,cat}){
       if (!state.keys.google) {
         return [
-          { name:'City Fashion Market', country:codeToName(country), city:city||'—', phone:'', email:'', website:'', google_url:'', google_search:'', categories:[cat||'market'] },
-          { name:'Modern Design Pop-Up', country:codeToName(country), city:city||'—', phone:'', email:'', website:'', google_url:'', google_search:'', categories:[cat||'pop-up'] },
+          { name:'City Fashion Market', country:codeToName(country), city:city||'—', phone:'', email:'', website:'', google_url:'', google_search:'', photo_url:'' },
+          { name:'Modern Design Pop-Up', country:codeToName(country), city:city||'—', phone:'', email:'', website:'', google_url:'', google_search:'', photo_url:'' },
         ];
       }
       await loadGoogleMaps(state.keys.google);
-      const base = (cat && cat.trim()) ? cat : 'fashion pop-up market trade show bazaar sample sale';
+      const base = (cat && cat.trim()) ? cat : 'fashion trade show multi brand market pop-up bazaar sample sale';
       const chunk = await googlePlacesTextSearch({ country, city, query: base, typeBias: 'point_of_interest' });
       const detailed = await Promise.all(chunk.slice(0, TEXTSEARCH_PAGE_LIMIT).map(inflatePlaceDetails));
       return detailed;
@@ -661,16 +713,16 @@
     document.getElementById('btnExport').addEventListener('click',()=>{
       if(!state.results.length){ alert('No results to export yet. Run a search first.'); return; }
       const headers = state.mode==='influencer'
-        ? ['status','name','country','city','followers','deal_type','budget','phone','email','website','google_url','google_search','categories']
-        : ['status','name','country','city','rating','user_ratings_total','phone','email','website','google_url','google_search','categories'];
+        ? ['status','name','country','city','followers','deal_type','budget','phone','email','website','google_url','google_search']
+        : ['status','name','country','city','rating','user_ratings_total','phone','email','website','google_url','google_search','photo_url'];
       const rows = state.results.map(r=> headers.map(h=> h==='status'?(r.status||'') : Array.isArray(r[h])? r[h].join('|') : (r[h]??'')));
       downloadCSV(`deral-${state.mode}-list.csv`, headers, rows);
     });
 
     document.getElementById('btnExportShortlist').addEventListener('click',()=>{
       if(!state.shortlist.length){ alert('Shortlist is empty'); return; }
-      const headers = ['status','name','country','city','phone','email','website','google_url','google_search','categories','notes'];
-      const rows = state.shortlist.map(r=> headers.map(h=> h==='categories' ? (r.categories||[]).join('|') : (r[h]??'')));
+      const headers = ['status','name','country','city','phone','email','website','google_url','google_search','photo_url','notes'];
+      const rows = state.shortlist.map(r=> headers.map(h=> Array.isArray(r[h]) ? r[h].join('|') : (r[h]??'')));
       downloadCSV('deral-shortlist.csv', headers, rows);
     });
 
@@ -704,7 +756,7 @@
         website:r.website||'',
         google_url:r.google_url||'',
         google_search:r.google_search||'',
-        categories:r.categories||[],
+        photo_url:r.photo_url||'',
         notes:r.notes||'',
         status:(r.status==='green'?'green':(r.status==='yellow'?'yellow':'green'))
       };
@@ -723,7 +775,7 @@
           website:r.website||state.shortlist[i].website,
           google_url:r.google_url||state.shortlist[i].google_url,
           google_search:r.google_search||state.shortlist[i].google_search,
-          categories:r.categories||state.shortlist[i].categories,
+          photo_url:r.photo_url||state.shortlist[i].photo_url,
           name:r.name||state.shortlist[i].name,
           country:r.country||state.shortlist[i].country,
           city:r.city||state.shortlist[i].city,
@@ -754,6 +806,8 @@
           ? `<div class="email-cell"><a class="link" href="mailto:${escapeHtml(r.email)}">${escapeHtml(r.email)}</a><button class="btn-mini" data-copy="${escapeHtml(r.email)}">Copy</button></div>`
           : (r.website ? buildFindEmailLinks(r) : '');
 
+        const thumb = r.photo_url ? `<img class="thumb" src="${escapeHtml(r.photo_url)}" alt="preview">` : '';
+
         return `
           <div class="panel shortlist-card">
             <div class="row space-between mb6">
@@ -765,7 +819,7 @@
               <span class="status-pill status-yellow ${r.status==='yellow'?'selected':''}" data-sl-status="${escapeHtml(id)}" data-action="yellow" title="In communication">• In comms</span>
               <span class="status-pill status-red ${r.status==='red'?'selected':''}" data-sl-status="${escapeHtml(id)}" data-action="red" title="Didn’t go through">× Didn’t go</span>
             </div>
-            <div class="muted mb6">${escapeHtml([r.city,r.country].filter(Boolean).join(', '))}</div>
+            <div class="muted mb6">${thumb} ${escapeHtml([r.city,r.country].filter(Boolean).join(', '))}</div>
             <div class="line-wrap">
               <div><b>Phone:</b> ${escapeHtml(r.phone||'')}</div>
               <div><b>Email:</b> ${emailPart}</div>
