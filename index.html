@@ -42,7 +42,7 @@
           <div class="pill" data-mode="influencer">Influencers</div>
           <div class="pill" data-mode="exhibit">Exhibits</div>
         </div>
-        <div class="help">Tip: Mark items green/yellow/red to organize. Green sends to the shortlist on the right.</div>
+        <div class="help">Tip: Mark items green/yellow/red to organize. Green adds to the shortlist on the right.</div>
       </div>
     </div>
 
@@ -60,6 +60,14 @@
         <div id="categoryWrap">
           <label>Category</label>
           <select id="categorySelect"></select>
+        </div>
+
+        <!-- Strict filter toggles (boutiques only) -->
+        <div class="boutique-only">
+          <label><input type="checkbox" id="chkStrictWomen" checked /> Strict women focus</label>
+        </div>
+        <div class="boutique-only">
+          <label><input type="checkbox" id="chkMultiBrand" checked /> Prefer multi-brand / concept stores</label>
         </div>
 
         <!-- Influencer-only -->
@@ -196,23 +204,25 @@
 
   <script>
     // ---------------- CONFIG ----------------
-    const TARGET_RESULTS_BOUTIQUES = 200;       // aim higher than 180
-    const MAX_VARIANTS_PER_SEARCH = 12;
+    const TARGET_RESULTS_BOUTIQUES = 200;       // aim high
+    const MAX_VARIANTS_PER_SEARCH = 14;
     const VARIANTS = [
-      'women multi brand fashion boutique',
-      'multi brand womenswear boutique',
-      'designer womenswear boutique independent',
-      'curated womens fashion boutique',
-      'women clothing multi brand store',
-      'independent womenswear boutique',
-      'evening dresses boutique womenswear',
-      'modest fashion womens boutique',
+      'womens multi brand fashion boutique',
+      'womens designer multi brand boutique',
+      'curated womenswear boutique independent',
+      'concept store womenswear multi brand',
+      'affordable womens boutique multi brand',
+      'ladies fashion boutique multi label',
+      'evening dresses womens boutique',
+      'modest womens fashion boutique',
       'resort wear womens boutique',
       'local designer womens boutique',
       'artisan womenswear boutique',
-      'occasion dress womens boutique'
+      'independent womenswear concept store',
+      'ladies clothing multi brand store',
+      'multi brand boutique womens fashion'
     ];
-    const TEXTSEARCH_PAGE_LIMIT = 60; // per query cap
+    const TEXTSEARCH_PAGE_LIMIT = 60; // per query cap (API limit per pagination chain)
     const DETAILS_CHUNK = 10;
 
     // --------- DATASETS ----------
@@ -259,7 +269,7 @@
       ]},
     ];
 
-    const BOUTIQUE_CATS = ['clothing_store']; // keep minimal; we push relevance via query keywords
+    const BOUTIQUE_CATS = ['clothing_store']; // we control relevance via queries + scoring
     const INFLUENCER_CATS = ['fashion','beauty','lifestyle','motherhood','travel','fitness'];
     const EXHIBIT_CATS = ['fashion trade show','design fair','market','pop-up'];
 
@@ -291,6 +301,8 @@
     const elProgress = document.getElementById('loadProgress');
     const btnShowMore = document.getElementById('btnShowMore');
     const btnCancelFetch = document.getElementById('btnCancelFetch');
+    const chkStrictWomen = document.getElementById('chkStrictWomen');
+    const chkMultiBrand = document.getElementById('chkMultiBrand');
 
     // ---------- UI helpers ----------
     function showLoading(on){ loadingOverlay.style.display = on ? 'flex' : 'none'; }
@@ -320,6 +332,7 @@
       document.querySelectorAll('.pill').forEach(p=>p.classList.toggle('active', p.dataset.mode===mode));
       document.querySelectorAll('.influencer-only').forEach(el=> el.style.display = (mode==='influencer')? 'block':'none');
       document.querySelectorAll('.exhibit-only').forEach(el=> el.style.display = (mode==='exhibit')? 'block':'none');
+      document.querySelectorAll('.boutique-only').forEach(el=> el.style.display = (mode==='boutique')? 'block':'none');
       const showInfluencerCols = mode==='influencer';
       document.querySelector('.th-followers').style.display = showInfluencerCols?'table-cell':'none';
       document.querySelector('.th-deal').style.display = showInfluencerCols?'table-cell':'none';
@@ -332,26 +345,45 @@
     }
 
     // -------- Boutique relevance filters --------
-    const CHAIN_BLOCK = /(h&m|zara|uniqlo|gap|forever\s?21|primark|mango|bershka|pull\s?&\s?bear|stradivarius|old\s?navy|target|walmart|macys|bloomingdale|nordstrom|nike|adidas|puma|reebok|under\s?armour|lacoste|tommy\s?hilfiger|ralph\s?lauren|levi'?s|victoria'?s?\s?secret|cos\b|& other stories|aritzia|shein|boohoo)/i;
-    const MENS_ONLY_HINTS = /\b(menswear|men'?s\s?store|barber|tailor(ing)?\s?for\s?men|suits\s?for\s?men|gentlemen|mens\s?fashion\s?only)\b/i;
+    // Big chains / single-brand houses to exclude
+    const CHAIN_BLOCK = /(h&m|zara|uniqlo|gap|forever\s?21|primark|mango|bershka|pull\s?&\s?bear|stradivarius|old\s?navy|target|walmart|macys|bloomingdale|nordstrom|nike|adidas|puma|reebok|under\s?armour|lacoste|tommy\s?hilfiger|ralph\s?lauren|levi'?s|victoria'?s?\s?secret|gucci|prada|chanel|louis\s?vuitton|balenciaga|dior|fendi|armani|versace|hermes|saint\s?laurent|ysl|celine|moncler|the\s?north\s?face|aritzia|cos\b|& other stories|shein|boohoo|hollister|abercrombie|superdry|pull\s?and\s?bear)/i;
+
+    // Mens/kids/irrelevant hints
+    const NEG_HINTS = /\b(menswear|men'?s(?!\s*&\s*w)|gentlemen|barber|tailor(ing)?\s?for\s?men|boys|kids|children|sportswear|sneakers|streetwear only|outdoor gear|workwear)\b/i;
+
+    // Positive signals for womens + multi-brand/concept
+    const WOMEN_POS = /\b(women|women’s|womens|womenswear|ladies|dress|dresses|evening|bridal|modest|gown|resort|boutique|atelier|designer|curated|ladieswear)\b/i;
+    const MULTIBRAND_POS = /\b(multi[-\s]?brand|multi\s?label|concept\s?store|independent|curated|selected brands|many brands|various brands)\b/i;
 
     function looksRelevantPlaceName(name){
       if(!name) return true;
       if (CHAIN_BLOCK.test(name)) return false;
-      if (MENS_ONLY_HINTS.test(name.toLowerCase())) return false;
+      if (NEG_HINTS.test(name.toLowerCase())) return false;
       return true;
     }
 
-    // --- small heuristic to nudge toward womens/multi-brand using name+types ---
-    function scoreRelevanceByTypes(name, types=[]) {
-      let s = 0;
+    function scoreRelevance(name, types=[], strictWomen=true, preferMulti=true) {
       const n = (name||'').toLowerCase();
       const t = (types||[]).join(' ').toLowerCase();
-      if(/boutique|womens|women|ladies|dress|atelier|designer|curated/.test(n+t)) s+=2;
-      if(/multi[-\s]?brand|multi\s?label|concept\s?store/.test(n+t)) s+=3;
-      if(/bridal|evening|modest|resort/.test(n+t)) s+=1;
-      if(/kids|children|menswear|men's|barber/.test(n+t)) s-=2;
-      if(CHAIN_BLOCK.test(n)) s-=5;
+      let s = 0;
+      if (CHAIN_BLOCK.test(n)) s -= 6;
+      if (NEG_HINTS.test(n) || NEG_HINTS.test(t)) s -= 3;
+
+      // base boutique signals
+      if (/\bboutique|atelier|designer|curated|concept\s?store\b/.test(n+t)) s += 3;
+
+      // women focus
+      if (WOMEN_POS.test(n) || WOMEN_POS.test(t)) s += 3;
+      else if (strictWomen) s -= 2; // penalize if strict and no women signal
+
+      // multi-brand
+      if (MULTIBRAND_POS.test(n) || MULTIBRAND_POS.test(t)) s += 3;
+      else if (preferMulti) s -= 1;
+
+      // small boost for clothing_store type and not department_store
+      if (t.includes('clothing_store')) s += 1;
+      if (t.includes('department_store')) s -= 2;
+
       return s;
     }
 
@@ -362,7 +394,6 @@
       const sorted = [...state.results].sort((a,b)=> statusWeight(a.status||'') - statusWeight(b.status||''));
       tbody.innerHTML = sorted.map((r)=>{
         const loc = [r.city,r.country].filter(Boolean).join(', ');
-
         const preview = r.photo_url
           ? `<a href="${escapeHtml(r.google_url||r.google_search||'#')}" target="_blank" rel="noopener"><img class="thumb" src="${escapeHtml(r.photo_url)}" alt="preview"></a>`
           : '';
@@ -486,7 +517,6 @@
       if(!country){ alert('Please select a country'); return; }
       updateCurrency();
 
-      // reset progress & pagination
       elProgress.textContent = '';
       btnShowMore.style.display = 'none';
       state.allResults = [];
@@ -530,7 +560,7 @@
       elProgress.textContent = 'Stopping…';
     });
 
-    // --- Multi-variant streamed boutique search (>60) ---
+    // --- Multi-variant streamed boutique search (>60) with strict scoring ---
     async function searchBoutiquesMulti({country,city,cat}){
       if(!state.keys.google){
         return [
@@ -540,8 +570,8 @@
       }
       await loadGoogleMaps(state.keys.google);
 
-      const base = 'women multi brand boutique';
-      const variants = [ (cat ? (cat.replace('_',' ') + ' women boutique') : base), ...VARIANTS.slice(0, MAX_VARIANTS_PER_SEARCH-1)];
+      const base = 'womens multi brand boutique';
+      const variants = [ (cat ? (cat.replace('_',' ') + ' womens boutique multi brand') : base), ...VARIANTS ].slice(0, MAX_VARIANTS_PER_SEARCH);
 
       state.loading = true;
       state.cancel = false;
@@ -555,15 +585,21 @@
       renderRows();
       updatePaginationUI();
 
+      const strictWomen = !!chkStrictWomen.checked;
+      const preferMulti = !!chkMultiBrand.checked;
+
       let firstBatchShown = false;
 
       const pushBatch = (arr) => {
         for(const r of arr){
           const id = r.place_id || r.google_url || `${r.name}|${r.city}|${r.country}`;
           if(seen.has(id)) continue;
-          // final relevance gate on name/types
+
+          // final relevance gate on name/types with stricter threshold
+          const sc = scoreRelevance(r.name, r.categories, strictWomen, preferMulti);
           if(!looksRelevantPlaceName(r.name)) continue;
-          if(scoreRelevanceByTypes(r.name, r.categories) < 1) continue;
+          if (sc < 2) continue;                // was 1 → now stricter
+          if (strictWomen && sc < 3) continue; // even stricter if women focus is ON
 
           seen.add(id);
           state.allResults.push(r);
@@ -602,7 +638,7 @@
       return state.results;
     }
 
-    // TextSearch with strong city+country hint + geocoded location bias + anti-chain filter
+    // TextSearch with strong city+country hint + geocoded bias + anti-chain prefilter
     async function googlePlacesTextSearch({country, city, query, typeBias}){
       return new Promise((resolve,reject)=>{
         try{
@@ -676,7 +712,7 @@
             }
           }catch{ parsed.photo_url=''; }
 
-          const qSearch = encodeURIComponent(`${parsed.name} ${parsed.city||''} ${parsed.country||''} boutique womenswear`);
+          const qSearch = encodeURIComponent(`${parsed.name} ${parsed.city||''} ${parsed.country||''} womens multi brand boutique`);
           parsed.google_search = `https://www.google.com/search?q=${qSearch}`;
 
           res(parsed);
@@ -684,7 +720,7 @@
       });
     }
 
-    // ---- Influencers / Exhibits (same as before, exhibits via Places keyword) ----
+    // ---- Influencers / Exhibits (unchanged major logic) ----
     async function searchInfluencers({country,city,cat,minF,maxF,minB,maxB}){
       const mock = [
         { name:'@style.with.noa', country:codeToName(country), city:city||'—', followers:38000, phone:'', email:'inbox@stylewithnoa.com', website:'', google_url:'', google_search:'', categories:[cat||'fashion'], deal_type:'item+%', budget:0 },
@@ -805,7 +841,6 @@
         const emailPart = r.email
           ? `<div class="email-cell"><a class="link" href="mailto:${escapeHtml(r.email)}">${escapeHtml(r.email)}</a><button class="btn-mini" data-copy="${escapeHtml(r.email)}">Copy</button></div>`
           : (r.website ? buildFindEmailLinks(r) : '');
-
         const thumb = r.photo_url ? `<img class="thumb" src="${escapeHtml(r.photo_url)}" alt="preview">` : '';
 
         return `
@@ -883,7 +918,6 @@
     });
 
     // ---------- GOOGLE HELPERS ----------
-    // Strict geocode with country restriction
     async function geocodeCityCenter(countryCode, cityName){
       return new Promise((resolve)=>{
         const geocoder = new google.maps.Geocoder();
