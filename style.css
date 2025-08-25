@@ -51,11 +51,14 @@ tbody tr td:last-child{border-top-right-radius:10px;border-bottom-right-radius:1
 .divider{height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.12),transparent);margin:4px 0}
 .mb6{margin-bottom:6px}
 
-/* Narrower columns */
+/* Narrower columns + thumbnail */
 th.th-phone, td.td-phone { min-width: 150px; }
 th.th-site,  td.td-site  { min-width: 140px; }
 th.th-links, td.td-links { min-width: 160px; }
 th.th-email, td.td-email { min-width: 180px; }
+td.td-thumb { width: 80px; }
+.thumb{ width: 72px; height: 72px; object-fit: cover; border-radius: 10px; border:1px solid rgba(255,255,255,.12) }
+
 .email-cell{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
 
 a.link{color:#a5b4fc;text-decoration:none}
