@@ -1,139 +1,959 @@
-:root{
-  --bg:#0f1115;--panel:#151924;--muted:#202636;--ink:#e7ebf4;--sub:#a7b0c0;--brand:#8b5cf6;--brand-2:#22d3ee;--ok:#22c55e;--warn:#f59e0b;--err:#ef4444;
-  --radius:16px;--radius-sm:10px;--shadow:0 8px 30px rgba(0,0,0,.25)
-}
-*{box-sizing:border-box}
-html,body{height:100%}
-body{margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:linear-gradient(180deg,#0d0f15 0%,#0b0d12 100%);color:var(--ink)}
-.wrap{max-width:1200px;margin:32px auto;padding:0 20px}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>DERAL Leads Finder</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <!-- Loading overlay -->
+  <div id="loadingOverlay">
+    <div class="loader">
+      <div class="spinner"></div>
+      <div>Loading… fetching places</div>
+    </div>
+  </div>
 
-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
-.logo{display:flex;align-items:center;gap:12px}
-.logo-badge{width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,var(--brand),var(--brand-2));display:grid;place-items:center;color:#0b0d12;font-weight:800;box-shadow:var(--shadow)}
-.h1{font-weight:700;letter-spacing:.2px}
-.sub{color:var(--sub);font-size:14px}
+  <div class="wrap">
+    <header>
+      <div class="logo">
+        <div class="logo-badge">D</div>
+        <div>
+          <div class="h1">DERAL Leads Finder</div>
+          <div class="sub">Women’s multi-brand boutiques • influencers • exhibits — shortlist, notes, export.</div>
+        </div>
+      </div>
+      <div class="row">
+        <button class="btn secondary" id="btnSettings">API / Settings</button>
+        <button class="btn" id="btnExport">Create List (CSV)</button>
+      </div>
+    </header>
 
-.panel{background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,.02));border:1px solid rgba(255,255,255,.08);border-radius:var(--radius);box-shadow:var(--shadow);margin-bottom:12px}
-.controls{display:grid;gap:12px;padding:18px}
-.grid{display:grid;gap:12px}
-.g-3{grid-template-columns:repeat(3,minmax(0,1fr))}
-.g-2{grid-template-columns:repeat(2,minmax(0,1fr))}
-@media (max-width:1000px){.g-3{grid-template-columns:1fr}.g-2{grid-template-columns:1fr}}
+    <!-- MODE SWITCHER -->
+    <div class="panel">
+      <div class="controls">
+        <label>What are you looking for?</label>
+        <div class="switcher" id="modeSwitcher">
+          <div class="pill active" data-mode="boutique">Boutiques</div>
+          <div class="pill" data-mode="influencer">Influencers</div>
+          <div class="pill" data-mode="exhibit">Exhibits</div>
+        </div>
+        <div class="help">Tip: Mark items green/yellow/red to organize. Green adds to the shortlist on the right.</div>
+      </div>
+    </div>
 
-label{font-size:12px;color:var(--sub);display:block;margin-bottom:6px}
-select,input,textarea{width:100%;border-radius:12px;border:1px solid rgba(255,255,255,.08);padding:12px 14px;background:#0e121b;color:var(--ink);outline:none}
-select:focus,input:focus,textarea:focus{border-color:var(--brand)}
-textarea{min-height:84px;resize:vertical}
+    <!-- FILTERS -->
+    <div class="panel">
+      <div class="controls grid g-3">
+        <div>
+          <label>Country</label>
+          <select id="countrySelect"></select>
+        </div>
+        <div>
+          <label>City</label>
+          <select id="citySelect"><option value="">Select country first</option></select>
+        </div>
+        <div id="categoryWrap">
+          <label>Category</label>
+          <select id="categorySelect"></select>
+        </div>
 
-.switcher{display:flex;gap:8px;background:#0a0d14;border:1px solid rgba(255,255,255,.08);padding:6px;border-radius:12px}
-.pill{flex:1;text-align:center;padding:10px;border-radius:10px;cursor:pointer;color:var(--sub);border:1px solid transparent;user-select:none}
-.pill.active{background:linear-gradient(180deg,#101629,#0f1422);color:var(--ink);border-color:rgba(255,255,255,.08)}
+        <!-- Strict filter toggles (boutiques only) -->
+        <div class="boutique-only">
+          <label><input type="checkbox" id="chkStrictWomen" checked /> Strict women focus</label>
+        </div>
+        <div class="boutique-only">
+          <label><input type="checkbox" id="chkMultiBrand" checked /> Prefer multi-brand / concept stores</label>
+        </div>
 
-.row{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap}
-.row-right{justify-content:flex-end}
-.space-between{justify-content:space-between;align-items:center}
-.strong{font-weight:700}
-.help{font-size:12px;color:var(--sub)}
-.minw{min-width:160px}
-.kpi{display:flex;gap:14px;flex-wrap:wrap;margin:16px 0}
-.kpi .card{flex:1;min-width:220px;background:#0f1420;border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:12px}
-.kpi-num{font-weight:700;font-size:22px}
-.kpi-txt{font-weight:700}
+        <!-- Influencer-only -->
+        <div class="influencer-only" style="display:none">
+          <label>Followers (min)</label>
+          <input type="number" id="minFollowers" placeholder="e.g., 5000" />
+        </div>
+        <div class="influencer-only" style="display:none">
+          <label>Followers (max)</label>
+          <input type="number" id="maxFollowers" placeholder="e.g., 50000" />
+        </div>
+        <div class="influencer-only" style="display:none">
+          <label>Budget (min) <span id="budgetCur1" class="muted">USD</span></label>
+          <input type="number" id="minBudget" placeholder="e.g., 200" />
+        </div>
+        <div class="influencer-only" style="display:none">
+          <label>Budget (max) <span id="budgetCur2" class="muted">USD</span></label>
+          <input type="number" id="maxBudget" placeholder="e.g., 1000" />
+        </div>
 
-/* Tables */
-table{width:100%;border-collapse:separate;border-spacing:0 8px;table-layout:fixed}
-thead th{font-size:12px;color:var(--sub);font-weight:600;text-align:left;padding:0 12px}
-tbody td{background:#0f1420;border:1px solid rgba(255,255,255,.06);padding:14px 12px;vertical-align:top;word-wrap:break-word;overflow-wrap:anywhere}
-tbody tr td:first-child{border-top-left-radius:10px;border-bottom-left-radius:10px}
-tbody tr td:last-child{border-top-right-radius:10px;border-bottom-right-radius:10px}
+        <!-- Exhibit-only -->
+        <div class="exhibit-only" style="display:none">
+          <label>Dates (from)</label>
+          <input type="date" id="dateFrom" />
+        </div>
+        <div class="exhibit-only" style="display:none">
+          <label>Dates (to)</label>
+          <input type="date" id="dateTo" />
+        </div>
 
-.muted{color:var(--sub)}
-.divider{height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.12),transparent);margin:4px 0}
-.mb6{margin-bottom:6px}
+        <div class="row row-right">
+          <button class="btn" id="btnSearch">Search</button>
+          <button class="btn ghost" id="btnClear">Clear</button>
+        </div>
+      </div>
+    </div>
 
-/* Narrower columns + thumbnail */
-th.th-phone, td.td-phone { min-width: 150px; }
-th.th-site,  td.td-site  { min-width: 140px; }
-th.th-links, td.td-links { min-width: 160px; }
-th.th-email, td.td-email { min-width: 180px; }
-td.td-thumb { width: 80px; }
-.thumb{ width: 72px; height: 72px; object-fit: cover; border-radius: 10px; border:1px solid rgba(255,255,255,.12) }
+    <!-- KPIs -->
+    <div class="kpi">
+      <div class="card"><div class="muted">Results</div><div id="kpiResults" class="kpi-num">0</div></div>
+      <div class="card"><div class="muted">Mode</div><div id="kpiMode" class="kpi-txt">Boutiques</div></div>
+      <div class="card"><div class="muted">Currency</div><div id="kpiCur" class="kpi-txt">USD</div></div>
+    </div>
 
-.email-cell{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+    <div class="two-col">
+      <!-- RESULTS PANEL -->
+      <div class="panel">
+        <div class="controls results-panel" id="resultsPanel">
 
-a.link{color:#a5b4fc;text-decoration:none}
-a.link:hover{text-decoration:underline}
+          <div class="row space-between">
+            <div class="strong">Results</div>
+            <div class="help">Thumbnails come from Google Maps Photos (when available).</div>
+          </div>
+          <div class="divider"></div>
 
-.btn{appearance:none;border:none;background:linear-gradient(135deg,var(--brand),var(--brand-2));color:#0b0d12;font-weight:700;padding:12px 16px;border-radius:12px;cursor:pointer;box-shadow:var(--shadow)}
-.btn.secondary{background:#0e121b;color:var(--ink);border:1px solid rgba(255,255,255,.12);font-weight:600}
-.btn.ghost{background:transparent;color:var(--ink);border:1px dashed rgba(255,255,255,.2);font-weight:600}
-.btn-mini{font-size:12px;padding:4px 8px;border-radius:8px;border:1px solid rgba(255,255,255,.18);background:#0e121b;color:var(--ink);cursor:pointer}
+          <!-- Scrollable area -->
+          <div class="results-scroll" id="resultsScrollArea">
+            <table id="resultsTable">
+              <thead>
+                <tr>
+                  <th>Status</th>
+                  <th>Preview</th>
+                  <th>Name</th>
+                  <th>Location</th>
+                  <th class="th-rating">Rating</th>
+                  <th class="th-reviews">Reviews</th>
+                  <th class="th-phone">Phone</th>
+                  <th class="th-email">Email</th>
+                  <th class="th-site">Website</th>
+                  <th class="th-links">Links</th>
+                  <th class="th-followers" style="display:none">Followers</th>
+                  <th class="th-deal" style="display:none">Deal Type</th>
+                  <th class="th-budget" style="display:none">Budget</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
 
-/* Status pills */
-.status-wrap{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
-.status-pill{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;border:1px solid rgba(255,255,255,.16);cursor:pointer;font-size:12px;user-select:none}
-.status-green{background:rgba(34,197,94,.12);border-color:rgba(34,197,94,.35);color:#86efac}
-.status-yellow{background:rgba(245,158,11,.12);border-color:rgba(245,158,11,.35);color:#fcd34d}
-.status-red{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,.35);color:#fca5a5}
-.status-pill.selected{ outline:2px solid rgba(255,255,255,.35); box-shadow:0 0 0 2px rgba(255,255,255,.12) inset; }
-.status-pill[data-action="green"].selected{ outline-color: rgba(34,197,94,.6); }
-.status-pill[data-action="yellow"].selected{ outline-color: rgba(245,158,11,.6); }
-.status-pill[data-action="red"].selected{ outline-color: rgba(239,68,68,.6); }
+          <!-- Sticky footer -->
+          <div class="results-footer" id="resultsFooter">
+            <span id="loadProgress" class="muted minw"></span>
+            <button class="btn ghost" id="btnCancelFetch" style="display:none">Stop</button>
+            <button class="btn secondary" id="btnShowMore" style="display:none">Show next 40</button>
+          </div>
 
-/* Two columns */
-.two-col{display:grid;grid-template-columns:2fr 1fr;gap:16px}
-@media (max-width:1000px){.two-col{grid-template-columns:1fr}}
+        </div>
+      </div>
 
-/* Shortlist cards */
-.shortlist-card{padding:12px;border-radius:12px;border:1px solid rgba(255,255,255,.08);margin-bottom:10px}
-.line-wrap{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:8px}
+      <!-- SHORTLIST -->
+      <div class="panel">
+        <div class="controls">
+          <div class="row space-between">
+            <div class="strong">Relevant (Shortlist)</div>
+            <div class="row">
+              <button class="btn secondary" id="btnExportShortlist">Export Shortlist CSV</button>
+              <button class="btn ghost" id="btnClearShortlist" title="Remove all shortlisted items">Clear</button>
+            </div>
+          </div>
+          <div class="divider"></div>
+          <div id="shortlistWrap"></div>
+        </div>
+      </div>
+    </div>
 
-/* Loading overlay */
-#loadingOverlay{
-  position:fixed; inset:0; background:rgba(0,0,0,.55);
-  display:none; align-items:center; justify-content:center; z-index:9999;
-}
-.loader{
-  display:flex; flex-direction:column; align-items:center; gap:12px;
-  background:rgba(21,25,36,.9); padding:24px 28px; border-radius:16px; border:1px solid rgba(255,255,255,.1);
-  box-shadow:var(--shadow);
-}
-.spinner{
-  width:42px; height:42px; border:4px solid rgba(255,255,255,.15); border-top-color:#a5b4fc; border-radius:50%;
-  animation:spin 1s linear infinite;
-}
-@keyframes spin{ to{ transform:rotate(360deg) } }
+    <!-- SETTINGS MODAL -->
+    <div id="modal">
+      <div class="panel modal-card">
+        <div class="controls grid g-2">
+          <div class="wide">
+            <div class="strong">Settings & API Keys</div>
+            <div class="help">Keys are saved in your browser only. For production, keep secrets on a server/proxy.</div>
+          </div>
+          <div>
+            <label>Google Maps JavaScript API Key <span class="muted">(Places)</span></label>
+            <input id="googleKey" placeholder="AIza..." />
+          </div>
+          <div>
+            <label>Instagram / RapidAPI Key <span class="muted">(optional, for influencer lookup)</span></label>
+            <input id="instaKey" placeholder="xxxx-xxxx-xxxx" />
+          </div>
+          <div class="row row-right">
+            <button class="btn secondary" id="btnCloseModal">Close</button>
+            <button class="btn" id="btnSaveKeys">Save</button>
+          </div>
+        </div>
+      </div>
+    </div>
 
-/* Results panel — taller so ~10 rows visible */
-.results-panel{
-  display:flex;
-  flex-direction:column;
-  height: calc(100vh - 260px); /* adjust if needed */
-  min-height: 520px;
-}
-.results-scroll{
-  flex: 1 1 auto;
-  overflow-y: auto;
-  overflow-x: hidden;
-  padding-bottom: 64px; /* so last row isn’t hidden under footer */
-}
-.results-footer{
-  position: sticky;
-  bottom: 0;
-  z-index: 5;
-  display:flex;
-  gap:12px;
-  justify-content:center;
-  align-items:center;
-  background: linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,.02));
-  border-top: 1px solid rgba(255,255,255,.12);
-  padding: 10px 12px;
-}
+    <div class="help footnote">
+      ⚠️ Google Places rarely returns emails. Use “Website” or “Google Search / Find email” to locate a public address, then click a row to paste it. Shortlist & notes are saved in your browser.
+    </div>
+  </div>
 
-/* Modal */
-#modal{
-  position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;padding:20px;z-index:10000
-}
-.modal-card{max-width:720px;width:100%}
-.wide{grid-column:1/-1}
-.footnote{margin-top:16px}
+  <script>
+    // ---------------- CONFIG ----------------
+    const TARGET_RESULTS_BOUTIQUES = 200;       // aim high
+    const MAX_VARIANTS_PER_SEARCH = 14;
+    const VARIANTS = [
+      'womens multi brand fashion boutique',
+      'womens designer multi brand boutique',
+      'curated womenswear boutique independent',
+      'concept store womenswear multi brand',
+      'affordable womens boutique multi brand',
+      'ladies fashion boutique multi label',
+      'evening dresses womens boutique',
+      'modest womens fashion boutique',
+      'resort wear womens boutique',
+      'local designer womens boutique',
+      'artisan womenswear boutique',
+      'independent womenswear concept store',
+      'ladies clothing multi brand store',
+      'multi brand boutique womens fashion'
+    ];
+    const TEXTSEARCH_PAGE_LIMIT = 60; // per query cap (API limit per pagination chain)
+    const DETAILS_CHUNK = 10;
+
+    // --------- DATASETS ----------
+    const COUNTRIES = [
+      { code:'IL', name:'Israel', currency:'ILS', cities:[
+        'Tel Aviv','Jerusalem','Haifa','Rishon LeZion','Petah Tikva','Netanya','Ashdod','Ashkelon',
+        'Beersheba','Herzliya','Ramat Gan','Givatayim','Holon','Bat Yam','Rehovot','Kfar Saba',
+        'Ra\'anana','Rosh HaAyin','Hadera','Nahariya','Eilat','Modi\'in-Maccabim-Re\'ut','Yokneam','Kiryat Ata'
+      ]},
+      { code:'US', name:'United States', currency:'USD', cities:[
+        'New York','Los Angeles','Miami','Chicago','Dallas','San Francisco','Boston','Seattle','Atlanta','Austin',
+        'Denver','Houston','Philadelphia','Washington','San Diego','Las Vegas','Phoenix','Orlando','Tampa','Portland',
+        'Nashville','Charlotte','San Jose','Minneapolis','Detroit','New Orleans'
+      ]},
+      { code:'GB', name:'United Kingdom', currency:'USD', cities:[
+        'London','Manchester','Birmingham','Leeds','Liverpool','Bristol','Glasgow','Edinburgh','Brighton','Newcastle'
+      ]},
+      { code:'FR', name:'France', currency:'USD', cities:[
+        'Paris','Lyon','Marseille','Nice','Bordeaux','Toulouse','Lille','Nantes','Montpellier','Cannes'
+      ]},
+      { code:'DE', name:'Germany', currency:'USD', cities:[
+        'Berlin','Munich','Hamburg','Frankfurt','Cologne','Düsseldorf','Stuttgart','Leipzig','Dresden','Nuremberg'
+      ]},
+      { code:'IT', name:'Italy', currency:'USD', cities:[
+        'Milan','Rome','Florence','Naples','Venice','Turin','Bologna','Verona','Genoa','Palermo'
+      ]},
+      { code:'ES', name:'Spain', currency:'USD', cities:[
+        'Madrid','Barcelona','Valencia','Seville','Malaga','Bilbao','Zaragoza','Palma de Mallorca'
+      ]},
+      { code:'NL', name:'Netherlands', currency:'USD', cities:[
+        'Amsterdam','Rotterdam','The Hague','Utrecht','Eindhoven','Haarlem'
+      ]},
+      { code:'GR', name:'Greece', currency:'USD', cities:[
+        'Athens','Thessaloniki','Patras','Heraklion','Chania'
+      ]},
+      { code:'PT', name:'Portugal', currency:'USD', cities:[
+        'Lisbon','Porto','Braga','Coimbra','Faro'
+      ]},
+      { code:'CH', name:'Switzerland', currency:'USD', cities:[
+        'Zurich','Geneva','Basel','Lausanne','Bern','Lugano'
+      ]},
+      { code:'AT', name:'Austria', currency:'USD', cities:[
+        'Vienna','Salzburg','Innsbruck','Graz','Linz'
+      ]},
+    ];
+
+    const BOUTIQUE_CATS = ['clothing_store']; // we control relevance via queries + scoring
+    const INFLUENCER_CATS = ['fashion','beauty','lifestyle','motherhood','travel','fitness'];
+    const EXHIBIT_CATS = ['fashion trade show','design fair','market','pop-up'];
+
+    // -------------- STATE --------------
+    const state = {
+      mode:'boutique',
+      currency:'USD',
+      results:[],
+      allResults:[],
+      visibleCount:60,
+      pageSize:40,
+      shortlist: JSON.parse(localStorage.getItem('deral_shortlist')||'[]'),
+      keys:{ google: localStorage.getItem('deral_google_key')||'', insta: localStorage.getItem('deral_insta_key')||'' },
+      lastSearch: null,
+      loading:false,
+      cancel:false,
+    };
+
+    // ---------- ELEMENTS ----------
+    const countrySelect = document.getElementById('countrySelect');
+    const citySelect = document.getElementById('citySelect');
+    const categorySelect = document.getElementById('categorySelect');
+    const kpiResults = document.getElementById('kpiResults');
+    const kpiMode = document.getElementById('kpiMode');
+    const kpiCur = document.getElementById('kpiCur');
+    const shortlistWrap = document.getElementById('shortlistWrap');
+    const tbody = document.querySelector('#resultsTable tbody');
+    const loadingOverlay = document.getElementById('loadingOverlay');
+    const elProgress = document.getElementById('loadProgress');
+    const btnShowMore = document.getElementById('btnShowMore');
+    const btnCancelFetch = document.getElementById('btnCancelFetch');
+    const chkStrictWomen = document.getElementById('chkStrictWomen');
+    const chkMultiBrand = document.getElementById('chkMultiBrand');
+
+    // ---------- UI helpers ----------
+    function showLoading(on){ loadingOverlay.style.display = on ? 'flex' : 'none'; }
+    function updatePaginationUI(){ btnShowMore.style.display = (state.allResults.length > state.visibleCount) ? 'inline-block' : 'none'; }
+    function fillCountries(){
+      countrySelect.innerHTML = '<option value="">Select country</option>' + COUNTRIES.map(c=>`<option value="${c.code}">${c.name}</option>`).join('');
+    }
+    function fillCities(){
+      const c = COUNTRIES.find(x=>x.code===countrySelect.value);
+      if(!c){ citySelect.innerHTML = '<option value="">Select country first</option>'; return; }
+      citySelect.innerHTML = '<option value="">Any city</option>' + c.cities.map(ci=>`<option>${ci}</option>`).join('');
+    }
+    function fillCategories(){
+      let opts=[];
+      if(state.mode==='boutique') opts = BOUTIQUE_CATS;
+      if(state.mode==='influencer') opts = INFLUENCER_CATS;
+      if(state.mode==='exhibit') opts = EXHIBIT_CATS;
+      categorySelect.innerHTML = '<option value="">Any</option>' + opts.map(o=>`<option value="${o}">${o.replaceAll('_',' ')}</option>`).join('');
+    }
+    function updateCurrency(){
+      const isIL = countrySelect.value==='IL';
+      state.currency = isIL ? 'ILS' : 'USD';
+      kpiCur.textContent = state.currency;
+    }
+    function setMode(mode){
+      state.mode = mode; kpiMode.textContent = mode.charAt(0).toUpperCase()+mode.slice(1);
+      document.querySelectorAll('.pill').forEach(p=>p.classList.toggle('active', p.dataset.mode===mode));
+      document.querySelectorAll('.influencer-only').forEach(el=> el.style.display = (mode==='influencer')? 'block':'none');
+      document.querySelectorAll('.exhibit-only').forEach(el=> el.style.display = (mode==='exhibit')? 'block':'none');
+      document.querySelectorAll('.boutique-only').forEach(el=> el.style.display = (mode==='boutique')? 'block':'none');
+      const showInfluencerCols = mode==='influencer';
+      document.querySelector('.th-followers').style.display = showInfluencerCols?'table-cell':'none';
+      document.querySelector('.th-deal').style.display = showInfluencerCols?'table-cell':'none';
+      document.querySelector('.th-budget').style.display = showInfluencerCols?'table-cell':'none';
+      const showBoutiqueCols = mode!=='influencer';
+      document.querySelector('.th-rating').style.display = showBoutiqueCols?'table-cell':'none';
+      document.querySelector('.th-reviews').style.display = showBoutiqueCols?'table-cell':'none';
+      fillCategories();
+      renderRows();
+    }
+
+    // -------- Boutique relevance filters --------
+    // Big chains / single-brand houses to exclude
+    const CHAIN_BLOCK = /(h&m|zara|uniqlo|gap|forever\s?21|primark|mango|bershka|pull\s?&\s?bear|stradivarius|old\s?navy|target|walmart|macys|bloomingdale|nordstrom|nike|adidas|puma|reebok|under\s?armour|lacoste|tommy\s?hilfiger|ralph\s?lauren|levi'?s|victoria'?s?\s?secret|gucci|prada|chanel|louis\s?vuitton|balenciaga|dior|fendi|armani|versace|hermes|saint\s?laurent|ysl|celine|moncler|the\s?north\s?face|aritzia|cos\b|& other stories|shein|boohoo|hollister|abercrombie|superdry|pull\s?and\s?bear)/i;
+
+    // Mens/kids/irrelevant hints
+    const NEG_HINTS = /\b(menswear|men'?s(?!\s*&\s*w)|gentlemen|barber|tailor(ing)?\s?for\s?men|boys|kids|children|sportswear|sneakers|streetwear only|outdoor gear|workwear)\b/i;
+
+    // Positive signals for womens + multi-brand/concept
+    const WOMEN_POS = /\b(women|women’s|womens|womenswear|ladies|dress|dresses|evening|bridal|modest|gown|resort|boutique|atelier|designer|curated|ladieswear)\b/i;
+    const MULTIBRAND_POS = /\b(multi[-\s]?brand|multi\s?label|concept\s?store|independent|curated|selected brands|many brands|various brands)\b/i;
+
+    function looksRelevantPlaceName(name){
+      if(!name) return true;
+      if (CHAIN_BLOCK.test(name)) return false;
+      if (NEG_HINTS.test(name.toLowerCase())) return false;
+      return true;
+    }
+
+    function scoreRelevance(name, types=[], strictWomen=true, preferMulti=true) {
+      const n = (name||'').toLowerCase();
+      const t = (types||[]).join(' ').toLowerCase();
+      let s = 0;
+      if (CHAIN_BLOCK.test(n)) s -= 6;
+      if (NEG_HINTS.test(n) || NEG_HINTS.test(t)) s -= 3;
+
+      // base boutique signals
+      if (/\bboutique|atelier|designer|curated|concept\s?store\b/.test(n+t)) s += 3;
+
+      // women focus
+      if (WOMEN_POS.test(n) || WOMEN_POS.test(t)) s += 3;
+      else if (strictWomen) s -= 2; // penalize if strict and no women signal
+
+      // multi-brand
+      if (MULTIBRAND_POS.test(n) || MULTIBRAND_POS.test(t)) s += 3;
+      else if (preferMulti) s -= 1;
+
+      // small boost for clothing_store type and not department_store
+      if (t.includes('clothing_store')) s += 1;
+      if (t.includes('department_store')) s -= 2;
+
+      return s;
+    }
+
+    // -------- RENDERING --------
+    function statusWeight(s){ return s==='green'?0 : s==='yellow'?1 : s==='red'?3 : 2; }
+
+    function renderRows(){
+      const sorted = [...state.results].sort((a,b)=> statusWeight(a.status||'') - statusWeight(b.status||''));
+      tbody.innerHTML = sorted.map((r)=>{
+        const loc = [r.city,r.country].filter(Boolean).join(', ');
+        const preview = r.photo_url
+          ? `<a href="${escapeHtml(r.google_url||r.google_search||'#')}" target="_blank" rel="noopener"><img class="thumb" src="${escapeHtml(r.photo_url)}" alt="preview"></a>`
+          : '';
+
+        const emailCell = r.email
+          ? `<div class="email-cell">
+               <a class="link" href="mailto:${escapeHtml(r.email)}">${escapeHtml(r.email)}</a>
+               <button class="btn-mini" data-copy="${escapeHtml(r.email)}">Copy</button>
+             </div>`
+          : buildFindEmailLinks(r);
+
+        const siteCell = r.website ? `<a class="link" href="${escapeHtml(r.website)}" target="_blank" rel="noopener">Website</a>` : '';
+        const googleCell = [
+          r.google_url ? `<a class="link" href="${escapeHtml(r.google_url)}" target="_blank" rel="noopener">View on Google</a>` : '',
+          r.google_search ? `<a class="link" href="${escapeHtml(r.google_search)}" target="_blank" rel="noopener">Google Search</a>` : ''
+        ].filter(Boolean).join(' · ');
+
+        const st = r.status||'';
+        const pillGreen  = `<span class="status-pill status-green ${st==='green'?'selected':''}" data-action="green" title="Relevant">✓ Relevant</span>`;
+        const pillYellow = `<span class="status-pill status-yellow ${st==='yellow'?'selected':''}" data-action="yellow" title="Need to check">• Check</span>`;
+        const pillRed    = `<span class="status-pill status-red ${st==='red'?'selected':''}" data-action="red" title="Not relevant">× Not</span>`;
+        const statusPills = `<div class="status-wrap">${pillGreen}${pillYellow}${pillRed}</div>`;
+
+        const origIdx = state.results.indexOf(r);
+        return `<tr data-idx="${origIdx}">
+          <td>${statusPills}</td>
+          <td class="td-thumb">${preview}</td>
+          <td>${escapeHtml(r.name||'')}</td>
+          <td>${escapeHtml(loc)}</td>
+          <td class="td-rating" style="${state.mode==='influencer'?'display:none':''}">${r.rating??''}</td>
+          <td class="td-reviews" style="${state.mode==='influencer'?'display:none':''}">${r.user_ratings_total??''}</td>
+          <td class="td-phone">${escapeHtml(r.phone||'')}</td>
+          <td class="td-email">${emailCell}</td>
+          <td class="td-site">${siteCell}</td>
+          <td class="td-links">${googleCell}</td>
+          <td class="td-followers" style="${state.mode==='influencer'?'':'display:none'}">${r.followers??''}</td>
+          <td class="td-deal" style="${state.mode==='influencer'?'':'display:none'}">${escapeHtml(r.deal_type||'')}</td>
+          <td class="td-budget" style="${state.mode==='influencer'?'':'display:none'}">${r.budget? formatCurrency(r.budget):''}</td>
+        </tr>`;
+      }).join('');
+      kpiResults.textContent = state.results.length;
+      attachRowEditing();
+      attachStatusHandlers();
+      attachCopyHandlers();
+      renderShortlist();
+    }
+
+    function attachCopyHandlers(){
+      tbody.querySelectorAll('button[data-copy]').forEach(btn=>{
+        btn.addEventListener('click',()=>{
+          const text = btn.getAttribute('data-copy');
+          navigator.clipboard?.writeText(text);
+          btn.textContent = 'Copied!';
+          setTimeout(()=> btn.textContent='Copy', 1200);
+        });
+      });
+    }
+
+    function buildFindEmailLinks(r){
+      const name = (r.name||'').trim();
+      const qGeneral = encodeURIComponent(`${name} ${r.city||''} ${r.country||''} email`);
+      let siteLink = '';
+      if(r.website){
+        try{
+          const u = new URL(r.website);
+          const domain = u.hostname.replace(/^www\./,'');
+          const qSite = encodeURIComponent(`site:${domain} (email OR contact)`);
+          siteLink = `<a class="link" href="https://www.google.com/search?q=${qSite}" target="_blank" rel="noopener">Find email (site)</a>`;
+        }catch{}
+      }
+      const generalLink = `<a class="link" href="https://www.google.com/search?q=${qGeneral}" target="_blank" rel="noopener">Find email</a>`;
+      return [siteLink, generalLink].filter(Boolean).join(' · ');
+    }
+
+    function attachStatusHandlers(){
+      tbody.querySelectorAll('tr').forEach(tr=>{
+        tr.querySelectorAll('.status-pill').forEach(p=>{
+          p.addEventListener('click',(e)=>{
+            e.stopPropagation();
+            const idx = +tr.dataset.idx;
+            const action = p.dataset.action;
+            setStatus(idx, action);
+          });
+        });
+      });
+    }
+
+    function setStatus(idx, action){
+      const r = state.results[idx];
+      if(!r) return;
+      r.status = action;
+      if(action==='green'){ addToShortlist(r); }
+      else { syncShortlistContact(r); }
+      renderRows();
+    }
+
+    function attachRowEditing(){
+      tbody.querySelectorAll('tr').forEach(tr=>{
+        tr.addEventListener('click',()=>{
+          const idx = +tr.dataset.idx; const r = state.results[idx];
+          const newEmail = prompt('Edit email (leave blank to keep):', r.email||'');
+          if(newEmail!==null) r.email = newEmail.trim();
+          const newPhone = prompt('Edit phone (leave blank to keep):', r.phone||'');
+          if(newPhone!==null) r.phone = newPhone.trim();
+          if(state.mode==='influencer'){
+            const newDeal = prompt('Deal type (money / item+%)', r.deal_type||''); if(newDeal!==null) r.deal_type=newDeal.trim();
+            const newBudget = prompt(`Budget in ${state.currency}`, r.budget||''); if(newBudget!==null && newBudget!=='') r.budget = Number(newBudget);
+          }
+          syncShortlistContact(r);
+          renderRows();
+        })
+      })
+    }
+
+    function escapeHtml(s){ return (s||'').replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;","&gt;":"&gt;","\"":"&quot;","'":"&#039;"}[m])) }
+    function formatCurrency(n){ try{ return new Intl.NumberFormat(undefined,{style:'currency',currency:state.currency}).format(n) }catch{ return n } }
+
+    // --------- SEARCH ---------
+    document.getElementById('btnSearch').addEventListener('click', async ()=>{
+      const country = countrySelect.value; const city = citySelect.value; const cat = categorySelect.value;
+      if(!country){ alert('Please select a country'); return; }
+      updateCurrency();
+
+      elProgress.textContent = '';
+      btnShowMore.style.display = 'none';
+      state.allResults = [];
+      state.results = [];
+      state.visibleCount = 60;
+
+      showLoading(true);
+      try{
+        if(state.mode==='boutique'){
+          await searchBoutiquesMulti({country,city,cat}); // streaming populates state.*
+        } else if(state.mode==='influencer'){
+          const minF = +document.getElementById('minFollowers').value||0;
+          const maxF = +document.getElementById('maxFollowers').value||Number.MAX_SAFE_INTEGER;
+          const minB = +document.getElementById('minBudget').value||0;
+          const maxB = +document.getElementById('maxBudget').value||Number.MAX_SAFE_INTEGER;
+          state.results = await searchInfluencers({country,city,cat,minF,maxF,minB,maxB});
+        } else if(state.mode==='exhibit'){
+          const dateFrom = document.getElementById('dateFrom').value; const dateTo = document.getElementById('dateTo').value;
+          state.results = await searchExhibits({country,city,cat,dateFrom,dateTo});
+        }
+        state.results.forEach(r=>{ if(!r.status) r.status=''; });
+        state.lastSearch = { mode: state.mode, country, city, cat };
+        renderRows();
+      } finally {
+        showLoading(false);
+      }
+    });
+
+    document.getElementById('btnClear').addEventListener('click',()=>{ state.results=[]; renderRows(); });
+
+    document.getElementById('btnShowMore').addEventListener('click', ()=>{
+      state.visibleCount += state.pageSize;
+      state.results = state.allResults.slice(0, state.visibleCount);
+      renderRows();
+      updatePaginationUI();
+    });
+
+    document.getElementById('btnCancelFetch').addEventListener('click', ()=>{
+      state.cancel = true;
+      document.getElementById('btnCancelFetch').style.display = 'none';
+      elProgress.textContent = 'Stopping…';
+    });
+
+    // --- Multi-variant streamed boutique search (>60) with strict scoring ---
+    async function searchBoutiquesMulti({country,city,cat}){
+      if(!state.keys.google){
+        return [
+          { name:'Lumière Boutique', country:codeToName(country), city:city||'—', rating:4.6, user_ratings_total:128, phone:'+1 555-0100', email:'', website:'', google_url:'', google_search:'', photo_url:'' },
+          { name:'Atelier Rue', country:codeToName(country), city:city||'—', rating:4.4, user_ratings_total:86, phone:'+1 555-0101', email:'', website:'', google_url:'', google_search:'', photo_url:'' },
+        ];
+      }
+      await loadGoogleMaps(state.keys.google);
+
+      const base = 'womens multi brand boutique';
+      const variants = [ (cat ? (cat.replace('_',' ') + ' womens boutique multi brand') : base), ...VARIANTS ].slice(0, MAX_VARIANTS_PER_SEARCH);
+
+      state.loading = true;
+      state.cancel = false;
+      document.getElementById('btnCancelFetch').style.display = 'inline-block';
+      elProgress.textContent = 'Starting…';
+
+      const seen = new Set();
+      state.allResults = [];
+      state.visibleCount = 60;
+      state.results = [];
+      renderRows();
+      updatePaginationUI();
+
+      const strictWomen = !!chkStrictWomen.checked;
+      const preferMulti = !!chkMultiBrand.checked;
+
+      let firstBatchShown = false;
+
+      const pushBatch = (arr) => {
+        for(const r of arr){
+          const id = r.place_id || r.google_url || `${r.name}|${r.city}|${r.country}`;
+          if(seen.has(id)) continue;
+
+          // final relevance gate on name/types with stricter threshold
+          const sc = scoreRelevance(r.name, r.categories, strictWomen, preferMulti);
+          if(!looksRelevantPlaceName(r.name)) continue;
+          if (sc < 2) continue;                // was 1 → now stricter
+          if (strictWomen && sc < 3) continue; // even stricter if women focus is ON
+
+          seen.add(id);
+          state.allResults.push(r);
+          if(state.allResults.length >= TARGET_RESULTS_BOUTIQUES) break;
+        }
+        state.results = state.allResults.slice(0, state.visibleCount);
+        if(!firstBatchShown && state.results.length){ showLoading(false); firstBatchShown=true; }
+        renderRows();
+        updatePaginationUI();
+        elProgress.textContent = `${state.allResults.length}/${TARGET_RESULTS_BOUTIQUES} loaded…`;
+      };
+
+      for(const variant of variants){
+        if(state.cancel) break;
+        elProgress.textContent = `Searching "${variant}"… (${state.allResults.length}/${TARGET_RESULTS_BOUTIQUES})`;
+
+        const tsResults = await googlePlacesTextSearch({country,city,query:variant, typeBias:'clothing_store'});
+        if(state.cancel) break;
+
+        for(let i=0; i<tsResults.length; i+=DETAILS_CHUNK){
+          if(state.cancel) break;
+          const slice = tsResults.slice(i, i+DETAILS_CHUNK);
+          const detailed = await Promise.all(slice.map(inflatePlaceDetails));
+          pushBatch(detailed);
+          await new Promise(r=>setTimeout(r, 0));
+          if(state.allResults.length >= TARGET_RESULTS_BOUTIQUES) break;
+        }
+        if(state.allResults.length >= TARGET_RESULTS_BOUTIQUES) break;
+      }
+
+      state.loading = false;
+      document.getElementById('btnCancelFetch').style.display = 'none';
+      if(state.cancel){ elProgress.textContent = `Stopped at ${state.allResults.length} results.`; }
+      else { elProgress.textContent = `Done: ${state.allResults.length} results.`; }
+
+      return state.results;
+    }
+
+    // TextSearch with strong city+country hint + geocoded bias + anti-chain prefilter
+    async function googlePlacesTextSearch({country, city, query, typeBias}){
+      return new Promise((resolve,reject)=>{
+        try{
+          const service = new google.maps.places.PlacesService(document.createElement('div'));
+          const all = [];
+
+          const fullQuery = [query, city || '', codeToName(country) || ''].join(' ').trim();
+
+          const handlePage = (results, status, pagination) => {
+            if(status!==google.maps.places.PlacesServiceStatus.OK || !results){ finalize(); return; }
+            const filtered = results.filter(r => looksRelevantPlaceName(r.name));
+            all.push(...filtered);
+            if (pagination && pagination.hasNextPage && all.length < TEXTSEARCH_PAGE_LIMIT) {
+              setTimeout(()=> pagination.nextPage(), 1500);
+            } else {
+              finalize();
+            }
+          };
+          const finalize = () => resolve(all);
+
+          const request = { query: fullQuery };
+          if (city) {
+            geocodeCityCenter(country, city).then(center=>{
+              if(center){
+                request.location = center;
+                request.radius = 30000; // ~30km
+              }
+              if(typeBias) request.type = typeBias;
+              service.textSearch(request, handlePage);
+            });
+          } else {
+            if(typeBias) request.type = typeBias;
+            service.textSearch(request, handlePage);
+          }
+        }catch(e){ reject(e) }
+      });
+    }
+
+    // Inflate details (+photo)
+    async function inflatePlaceDetails(ts){
+      return new Promise((res)=>{
+        const service = new google.maps.places.PlacesService(document.createElement('div'));
+        service.getDetails({
+          placeId: ts.place_id,
+          fields:['name','rating','user_ratings_total','types','formatted_phone_number','website','address_components','url','photos']
+        }, det=>{
+          const parsed = {
+            place_id: ts.place_id,
+            name: det?.name||ts.name,
+            rating: det?.rating||ts.rating,
+            user_ratings_total: det?.user_ratings_total||ts.user_ratings_total,
+            phone: det?.formatted_phone_number||'',
+            email: '',
+            website: det?.website||'',
+            google_url: det?.url||'',
+            categories: det?.types||ts.types||[],
+          };
+          const comps = det?.address_components||[];
+          const cityComp = comps?.find(c=>c.types.includes('locality'))?.long_name
+                        || comps?.find(c=>c.types.includes('postal_town'))?.long_name || '';
+          const countryComp = comps?.find(c=>c.types.includes('country'))?.long_name || '';
+          parsed.city = cityComp; parsed.country = countryComp;
+
+          // Photo URL (thumbnail)
+          try{
+            const photoObj = (det?.photos && det.photos[0]) || (ts?.photos && ts.photos[0]) || null;
+            if(photoObj && typeof photoObj.getUrl === 'function'){
+              parsed.photo_url = photoObj.getUrl({maxWidth: 140, maxHeight: 140});
+            } else {
+              parsed.photo_url = '';
+            }
+          }catch{ parsed.photo_url=''; }
+
+          const qSearch = encodeURIComponent(`${parsed.name} ${parsed.city||''} ${parsed.country||''} womens multi brand boutique`);
+          parsed.google_search = `https://www.google.com/search?q=${qSearch}`;
+
+          res(parsed);
+        });
+      });
+    }
+
+    // ---- Influencers / Exhibits (unchanged major logic) ----
+    async function searchInfluencers({country,city,cat,minF,maxF,minB,maxB}){
+      const mock = [
+        { name:'@style.with.noa', country:codeToName(country), city:city||'—', followers:38000, phone:'', email:'inbox@stylewithnoa.com', website:'', google_url:'', google_search:'', categories:[cat||'fashion'], deal_type:'item+%', budget:0 },
+        { name:'@urban.eden', country:codeToName(country), city:city||'—', followers:92000, phone:'', email:'hi@urbaneden.co', website:'', google_url:'', google_search:'', categories:[cat||'lifestyle'], deal_type:'money', budget:1200 },
+      ];
+      return mock.filter(r=> r.followers>=minF && r.followers<=maxF && r.budget>=minB && r.budget<=maxB);
+    }
+
+    async function searchExhibits({country,city,cat}){
+      if (!state.keys.google) {
+        return [
+          { name:'City Fashion Market', country:codeToName(country), city:city||'—', phone:'', email:'', website:'', google_url:'', google_search:'', photo_url:'' },
+          { name:'Modern Design Pop-Up', country:codeToName(country), city:city||'—', phone:'', email:'', website:'', google_url:'', google_search:'', photo_url:'' },
+        ];
+      }
+      await loadGoogleMaps(state.keys.google);
+      const base = (cat && cat.trim()) ? cat : 'fashion trade show multi brand market pop-up bazaar sample sale';
+      const chunk = await googlePlacesTextSearch({ country, city, query: base, typeBias: 'point_of_interest' });
+      const detailed = await Promise.all(chunk.slice(0, TEXTSEARCH_PAGE_LIMIT).map(inflatePlaceDetails));
+      return detailed;
+    }
+
+    function codeToName(code){ return COUNTRIES.find(c=>c.code===code)?.name||code }
+
+    // --------- EXPORTS ---------
+    document.getElementById('btnExport').addEventListener('click',()=>{
+      if(!state.results.length){ alert('No results to export yet. Run a search first.'); return; }
+      const headers = state.mode==='influencer'
+        ? ['status','name','country','city','followers','deal_type','budget','phone','email','website','google_url','google_search']
+        : ['status','name','country','city','rating','user_ratings_total','phone','email','website','google_url','google_search','photo_url'];
+      const rows = state.results.map(r=> headers.map(h=> h==='status'?(r.status||'') : Array.isArray(r[h])? r[h].join('|') : (r[h]??'')));
+      downloadCSV(`deral-${state.mode}-list.csv`, headers, rows);
+    });
+
+    document.getElementById('btnExportShortlist').addEventListener('click',()=>{
+      if(!state.shortlist.length){ alert('Shortlist is empty'); return; }
+      const headers = ['status','name','country','city','phone','email','website','google_url','google_search','photo_url','notes'];
+      const rows = state.shortlist.map(r=> headers.map(h=> Array.isArray(r[h]) ? r[h].join('|') : (r[h]??'')));
+      downloadCSV('deral-shortlist.csv', headers, rows);
+    });
+
+    document.getElementById('btnClearShortlist').addEventListener('click',()=>{
+      if(confirm('Clear all items from shortlist?')){
+        state.shortlist = [];
+        persistShortlist();
+        renderShortlist();
+      }
+    });
+
+    function downloadCSV(filename, headers, rows){
+      const csv = [headers.join(','), ...rows.map(r=> r.map(v=>`"${String(v).replaceAll('"','""')}"`).join(','))].join('\n');
+      const blob = new Blob([csv],{type:'text/csv;charset=utf-8;'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href=url; a.download=filename; a.click(); URL.revokeObjectURL(url);
+    }
+
+    // ---------- SHORTLIST ----------
+    function makeItemId(r){ return (r.google_url||'') || `${r.name||''}|${r.city||''}|${r.country||''}`; }
+
+    function addToShortlist(r){
+      const id = makeItemId(r);
+      const existingIdx = state.shortlist.findIndex(x=> makeItemId(x)===id);
+      const base = {
+        name:r.name||'',
+        country:r.country||'',
+        city:r.city||'',
+        phone:r.phone||'',
+        email:r.email||'',
+        website:r.website||'',
+        google_url:r.google_url||'',
+        google_search:r.google_search||'',
+        photo_url:r.photo_url||'',
+        notes:r.notes||'',
+        status:(r.status==='green'?'green':(r.status==='yellow'?'yellow':'green'))
+      };
+      if(existingIdx>=0){ state.shortlist[existingIdx] = {...state.shortlist[existingIdx], ...base}; }
+      else { state.shortlist.push(base); }
+      persistShortlist();
+    }
+
+    function syncShortlistContact(r){
+      const id = makeItemId(r);
+      const i = state.shortlist.findIndex(x=> makeItemId(x)===id);
+      if(i>=0){
+        state.shortlist[i] = {...state.shortlist[i],
+          phone:r.phone||state.shortlist[i].phone,
+          email:r.email||state.shortlist[i].email,
+          website:r.website||state.shortlist[i].website,
+          google_url:r.google_url||state.shortlist[i].google_url,
+          google_search:r.google_search||state.shortlist[i].google_search,
+          photo_url:r.photo_url||state.shortlist[i].photo_url,
+          name:r.name||state.shortlist[i].name,
+          country:r.country||state.shortlist[i].country,
+          city:r.city||state.shortlist[i].city,
+          status:r.status || state.shortlist[i].status
+        };
+        persistShortlist();
+      }
+    }
+
+    function removeFromShortlistById(id){
+      const i = state.shortlist.findIndex(x=> makeItemId(x)===id);
+      if(i>=0){ state.shortlist.splice(i,1); persistShortlist(); renderShortlist(); }
+    }
+
+    function persistShortlist(){ localStorage.setItem('deral_shortlist', JSON.stringify(state.shortlist)); }
+
+    function renderShortlist(){
+      if(!state.shortlist.length){
+        shortlistWrap.innerHTML = '<div class="muted">No relevant items yet. Mark an item <span class="status-green status-pill" style="cursor:default">✓ Relevant</span> to add it here.</div>';
+        return;
+      }
+      shortlistWrap.innerHTML = state.shortlist.map((r)=>{
+        const id = makeItemId(r);
+        const site = r.website ? `<a class="link" href="${escapeHtml(r.website)}" target="_blank" rel="noopener">Website</a>` : '';
+        const ggl = r.google_url ? `<a class="link" href="${escapeHtml(r.google_url)}" target="_blank" rel="noopener">View on Google</a>` : '';
+        const gsr = r.google_search ? `<a class="link" href="${escapeHtml(r.google_search)}" target="_blank" rel="noopener">Google Search</a>` : '';
+        const emailPart = r.email
+          ? `<div class="email-cell"><a class="link" href="mailto:${escapeHtml(r.email)}">${escapeHtml(r.email)}</a><button class="btn-mini" data-copy="${escapeHtml(r.email)}">Copy</button></div>`
+          : (r.website ? buildFindEmailLinks(r) : '');
+        const thumb = r.photo_url ? `<img class="thumb" src="${escapeHtml(r.photo_url)}" alt="preview">` : '';
+
+        return `
+          <div class="panel shortlist-card">
+            <div class="row space-between mb6">
+              <div class="strong">${escapeHtml(r.name||'')}</div>
+              <button class="btn ghost" data-remove="${escapeHtml(id)}">Remove</button>
+            </div>
+            <div class="status-wrap" data-status-wrap="${escapeHtml(id)}">
+              <span class="status-pill status-green ${r.status==='green'?'selected':''}" data-sl-status="${escapeHtml(id)}" data-action="green" title="Working">✓ Working</span>
+              <span class="status-pill status-yellow ${r.status==='yellow'?'selected':''}" data-sl-status="${escapeHtml(id)}" data-action="yellow" title="In communication">• In comms</span>
+              <span class="status-pill status-red ${r.status==='red'?'selected':''}" data-sl-status="${escapeHtml(id)}" data-action="red" title="Didn’t go through">× Didn’t go</span>
+            </div>
+            <div class="muted mb6">${thumb} ${escapeHtml([r.city,r.country].filter(Boolean).join(', '))}</div>
+            <div class="line-wrap">
+              <div><b>Phone:</b> ${escapeHtml(r.phone||'')}</div>
+              <div><b>Email:</b> ${emailPart}</div>
+              <div>${site}</div>
+              <div>${ggl}</div>
+              <div>${gsr}</div>
+            </div>
+            <label>Notes</label>
+            <textarea data-notes="${escapeHtml(id)}" placeholder="e.g., Contacted, waiting for collab terms...">${r.notes||''}</textarea>
+          </div>
+        `;
+      }).join('');
+
+      // handlers
+      shortlistWrap.querySelectorAll('button[data-remove]').forEach(btn=>{
+        btn.addEventListener('click',()=> removeFromShortlistById(btn.getAttribute('data-remove')));
+      });
+      shortlistWrap.querySelectorAll('textarea[data-notes]').forEach(ta=>{
+        ta.addEventListener('input',()=>{
+          const id = ta.getAttribute('data-notes');
+          const i = state.shortlist.findIndex(x=> makeItemId(x)===id);
+          if(i>=0){ state.shortlist[i].notes = ta.value; persistShortlist(); }
+        });
+      });
+      shortlistWrap.querySelectorAll('[data-sl-status]').forEach(p=>{
+        p.addEventListener('click',()=>{
+          const id = p.getAttribute('data-sl-status');
+          const action = p.getAttribute('data-action');
+          const i = state.shortlist.findIndex(x=> makeItemId(x)===id);
+          if(i>=0){
+            state.shortlist[i].status = action;
+            persistShortlist();
+            renderShortlist();
+          }
+        });
+      });
+      shortlistWrap.querySelectorAll('button[data-copy]').forEach(btn=>{
+        btn.addEventListener('click',()=>{
+          const text = btn.getAttribute('data-copy');
+          navigator.clipboard?.writeText(text);
+          btn.textContent = 'Copied!';
+          setTimeout(()=> btn.textContent='Copy', 1200);
+        });
+      });
+    }
+
+    // ---------- SETTINGS ----------
+    document.getElementById('btnSettings').addEventListener('click',()=>{
+      document.getElementById('googleKey').value = state.keys.google;
+      document.getElementById('instaKey').value = state.keys.insta;
+      document.getElementById('modal').style.display='flex';
+    });
+    document.getElementById('btnCloseModal').addEventListener('click',()=>{ document.getElementById('modal').style.display='none' });
+    document.getElementById('btnSaveKeys').addEventListener('click',()=>{
+      state.keys.google = document.getElementById('googleKey').value.trim();
+      state.keys.insta = document.getElementById('instaKey').value.trim();
+      localStorage.setItem('deral_google_key', state.keys.google);
+      localStorage.setItem('deral_insta_key', state.keys.insta);
+      document.getElementById('modal').style.display='none';
+      alert('Saved locally. Remember to restrict your keys!');
+    });
+
+    // ---------- GOOGLE HELPERS ----------
+    async function geocodeCityCenter(countryCode, cityName){
+      return new Promise((resolve)=>{
+        const geocoder = new google.maps.Geocoder();
+        geocoder.geocode({
+          address: cityName,
+          componentRestrictions: { country: countryCode.toLowerCase() }
+        }, (res, status)=>{
+          if(status === 'OK' && res && res[0]) {
+            resolve(res[0].geometry.location);
+          } else {
+            const countryName = codeToName(countryCode);
+            geocoder.geocode({ address: [cityName, countryName].join(', ') }, (res2, status2)=>{
+              if(status2 === 'OK' && res2 && res2[0]) resolve(res2[0].geometry.location);
+              else resolve(null);
+            });
+          }
+        });
+      });
+    }
+
+    function loadGoogleMaps(key){
+      return new Promise((resolve,reject)=>{
+        if(window.google?.maps?.places && window.google?.maps?.Geocoder){ resolve(); return; }
+        const s = document.createElement('script');
+        s.src = `https://maps.googleapis.com/maps/api/js?key=${key}&libraries=places`;
+        s.async = true; s.onerror = ()=>reject(new Error('Failed to load Google Maps'));
+        s.onload = ()=> resolve();
+        document.head.appendChild(s);
+      })
+    }
+
+    // ---------- LIFECYCLE ----------
+    document.querySelectorAll('#modeSwitcher .pill').forEach(p=> p.addEventListener('click',()=> setMode(p.dataset.mode)));
+    countrySelect.addEventListener('change',()=>{ fillCities(); updateCurrency(); });
+
+    fillCountries(); fillCities(); fillCategories(); updateCurrency(); renderRows(); renderShortlist();
+  </script>
+</body>
+</html>
